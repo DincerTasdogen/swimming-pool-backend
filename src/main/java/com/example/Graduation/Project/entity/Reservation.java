@@ -41,6 +41,4 @@ public class Reservation {
 
     @Column(columnDefinition = "timestamp default CURRENT_TIMESTAMP")
     private LocalDateTime updatedAt;
-
-    // Getters and Setters
 }

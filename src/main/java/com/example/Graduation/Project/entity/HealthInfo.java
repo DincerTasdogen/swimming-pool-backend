@@ -61,5 +61,4 @@ public class HealthInfo {
     @Column(columnDefinition = "timestamp default CURRENT_TIMESTAMP")
     private LocalDateTime updatedAt;
 
-    // Getters and Setters
 }
