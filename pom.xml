@@ -8,11 +8,11 @@
 		<version>3.3.5</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.example</groupId>
+	<groupId>com.swimmingpool</groupId>
 	<artifactId>Swimming-Pool</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>Graduation-Project</name>
-	<description>Graduation Project</description>
+	<name>Swimming-Pool</name>
+	<description>Swimming Pool</description>
 	<url/>
 	<licenses>
 		<license/>
