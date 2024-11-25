@@ -2,8 +2,7 @@ package com.sp.SwimmingPool.model.entity;
 
 import com.sp.SwimmingPool.model.enums.UserRoleEnum;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -16,6 +15,7 @@ import java.time.LocalDateTime;
 )
 @Getter
 @Setter
+@NoArgsConstructor
 public class User {
 
     @Id
@@ -47,4 +47,24 @@ public class User {
     @Column(columnDefinition = "timestamp default CURRENT_TIMESTAMP")
     private LocalDateTime updatedAt;
 
+    @Builder
+    public User(
+            String email,
+            String password,
+            String name,
+            String surname,
+            UserRoleEnum role,
+            int memberCount,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt
+    ) {
+        this.email = email;
+        this.password = password;
+        this.name = name;
+        this.surname = surname;
+        this.role = role;
+        this.memberCount = memberCount;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
 }
