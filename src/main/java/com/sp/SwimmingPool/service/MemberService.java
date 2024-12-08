@@ -33,9 +33,7 @@ public class MemberService {
         member.setCanSwim(memberDTO.isCanSwim());
         memberRepository.save(member);
     }
-    public MemberDTO login(String email, String password) {
 
-    }
     public void updateMember(int id, MemberDTO memberDTO) {
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found with id: " + id));
