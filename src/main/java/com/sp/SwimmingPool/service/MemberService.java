@@ -16,7 +16,7 @@ public class MemberService {
     @Autowired
     private MemberRepository memberRepository;
 
-    public void registerMember(MemberDTO memberDTO) {
+    public MemberDTO createMember(MemberDTO memberDTO) {
         Member member = new Member();
         member.setName(memberDTO.getName());
         member.setSurname(memberDTO.getSurname());
@@ -31,10 +31,12 @@ public class MemberService {
         member.setIdPhotoBack(memberDTO.getIdPhotoBack());
         member.setPhoto(memberDTO.getPhoto());
         member.setCanSwim(memberDTO.isCanSwim());
+
         memberRepository.save(member);
+        return memberDTO;
     }
 
-    public void updateMember(int id, MemberDTO memberDTO) {
+    public MemberDTO updateMember(int id, MemberDTO memberDTO) {
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found with id: " + id));
         member.setName(memberDTO.getName());
@@ -50,12 +52,24 @@ public class MemberService {
         member.setIdPhotoBack(memberDTO.getIdPhotoBack());
         member.setPhoto(memberDTO.getPhoto());
         member.setCanSwim(memberDTO.isCanSwim());
+
         memberRepository.save(member);
+        return memberDTO;
+    }
+
+    public void deleteMember(int id){
+        if (memberRepository.existsById(id)) {
+            memberRepository.deleteById(id);
+        } else {
+            throw new RuntimeException("Member with id " + id + " not found");
+        }
+
     }
     public MemberDTO getMemberDetails(int id) {
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found with id: " + id));
         MemberDTO memberDTO = new MemberDTO();
+        memberDTO.setId(member.getId());
         memberDTO.setName(member.getName());
         memberDTO.setSurname(member.getSurname());
         memberDTO.setEmail(member.getEmail());
@@ -68,6 +82,7 @@ public class MemberService {
         memberDTO.setIdPhotoBack(member.getIdPhotoBack());
         memberDTO.setPhoto(member.getPhoto());
         memberDTO.setCanSwim(member.isCanSwim());
+
         return memberDTO;
     }
     public List<MemberDTO> listAllMembers() {
@@ -75,6 +90,7 @@ public class MemberService {
         List<MemberDTO> memberDTOs = new ArrayList<>();
         for (Member member : members) {
             MemberDTO memberDTO = new MemberDTO();
+            memberDTO.setId(member.getId());
             memberDTO.setName(member.getName());
             memberDTO.setSurname(member.getSurname());
             memberDTO.setEmail(member.getEmail());
