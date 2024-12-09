@@ -1,5 +1,6 @@
 package com.sp.SwimmingPool.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.time.LocalTime;
@@ -15,6 +16,7 @@ public class PackageTypeDTO {
     private double price;
     private LocalTime startTime;
     private LocalTime endTime;
+    @JsonProperty("isEducationPackage")
     private boolean isEducationPackage;
     private boolean requiresSwimmingAbility;
 

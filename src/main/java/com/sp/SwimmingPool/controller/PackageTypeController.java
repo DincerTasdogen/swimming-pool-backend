@@ -30,6 +30,18 @@ public class PackageTypeController {
         }
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<PackageTypeDTO> getPackageTypeById(@PathVariable int id) {
+        try {
+            PackageTypeDTO packageType = packageService.getPackageById(id);
+            return new ResponseEntity<>(packageType, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PackageTypeDTO> createPackageType(@RequestBody PackageTypeDTO packageTypeDTO) {
@@ -45,11 +57,14 @@ public class PackageTypeController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PackageTypeDTO> updatePackageType(@PathVariable int id, @RequestBody PackageTypeDTO packageTypeDTO) {
         try {
+            System.out.println("Received DTO: " + packageTypeDTO);  // Add this
             PackageTypeDTO updatedPackage = packageService.updatePackage(id, packageTypeDTO);
+            System.out.println("Updated DTO: " + updatedPackage);  // Add this
             return new ResponseEntity<>(updatedPackage, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
         } catch (Exception e) {
+            e.printStackTrace();  // Add this
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

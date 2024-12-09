@@ -7,14 +7,14 @@ import java.util.List;
 
 @Service
 public class ReservationService {
-    public void createReservation(ReservationDTO reservationDTO) {
-
-    }
-    public void updateReservationStatus(int id, String status) {
-
-    }
-    public List<ReservationDTO> listAllReservations() {
-
-    }
+//    public void createReservation(ReservationDTO reservationDTO) {
+//
+//    }
+//    public void updateReservationStatus(int id, String status) {
+//
+//    }
+//    public List<ReservationDTO> listAllReservations() {
+//
+//    }
 }
 
