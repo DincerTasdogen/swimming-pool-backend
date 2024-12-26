@@ -53,6 +53,7 @@ public class AuthService {
                     .role(user != null ? user.getRole().name() : "MEMBER")
                     .email(loginRequest.getEmail())
                     .name(user != null ? user.getName() : member.getName())
+                    .id(user != null ? user.getId() : member.getId())
                     .build();
         } catch (BadCredentialsException e) {
             throw new InvalidCredentialsException();

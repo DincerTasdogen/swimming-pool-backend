@@ -5,13 +5,11 @@ import com.sp.SwimmingPool.dto.UserDTO;
 import com.sp.SwimmingPool.service.MemberService;
 import com.sp.SwimmingPool.service.UserService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/profile")
+@RequestMapping("/api/profile")
+@CrossOrigin(origins = "http://localhost:3000")
 public class ProfileController {
 
     private final MemberService memberService;
@@ -22,18 +20,22 @@ public class ProfileController {
         this.userService = userService;
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getProfileDetails(@PathVariable int id) {
+    @GetMapping("/member/{id}")
+    public ResponseEntity<?> getMemberProfileDetails(@PathVariable int id) {
         MemberDTO member = memberService.getMemberDetails(id);
         if (member != null) {
             return ResponseEntity.ok(member);
         }
 
+        return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/staff/{id}")
+    public ResponseEntity<?> getStaffProfileDetails(@PathVariable int id) {
         UserDTO user = userService.getUserDetails(id);
         if (user != null) {
             return ResponseEntity.ok(user);
         }
-
         return ResponseEntity.notFound().build();
     }
 }
