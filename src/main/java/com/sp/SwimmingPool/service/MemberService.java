@@ -21,7 +21,6 @@ public class MemberService {
         member.setName(memberDTO.getName());
         member.setSurname(memberDTO.getSurname());
         member.setEmail(memberDTO.getEmail());
-        member.setPassword(memberDTO.getPassword());
         member.setIdentityNumber(memberDTO.getIdentityNumber());
         member.setGender(MemberGenderEnum.valueOf(memberDTO.getGender().toUpperCase()));
         member.setWeight(memberDTO.getWeight());
@@ -42,7 +41,6 @@ public class MemberService {
         member.setName(memberDTO.getName());
         member.setSurname(memberDTO.getSurname());
         member.setEmail(memberDTO.getEmail());
-        member.setPassword(memberDTO.getPassword());
         member.setIdentityNumber(memberDTO.getIdentityNumber());
         member.setGender(MemberGenderEnum.valueOf(memberDTO.getGender().toUpperCase()));
         member.setWeight(memberDTO.getWeight());

@@ -5,6 +5,7 @@ import com.sp.SwimmingPool.model.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,6 +19,8 @@ import java.util.List;
 public class UserPrincipal implements UserDetails {
     private Integer id;
     private String email;
+    @Getter
+    private String name;
     private String password;
     private String role;
     private String userType;
@@ -30,6 +33,7 @@ public class UserPrincipal implements UserDetails {
 
         return UserPrincipal.builder()
                 .id(user.getId())
+                .name(user.getName())
                 .email(user.getEmail())
                 .password(user.getPassword())
                 .role(user.getRole().name())
@@ -45,6 +49,7 @@ public class UserPrincipal implements UserDetails {
 
         return UserPrincipal.builder()
                 .id(member.getId())
+                .name(member.getName())
                 .email(member.getEmail())
                 .password(member.getPassword())
                 .role("MEMBER")

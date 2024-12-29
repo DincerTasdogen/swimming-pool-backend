@@ -13,12 +13,18 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/packages")
-@CrossOrigin(origins = "http://localhost:3000")
 @RequiredArgsConstructor
 public class PackageTypeController {
 
     @Autowired
     private PackageService packageService;
+
+    private PackageTypeDTO filterSensitiveData(PackageTypeDTO dto, boolean isAuthenticated) {
+        if (!isAuthenticated) {
+            dto.setPrice(null);
+        }
+        return dto;
+    };
 
     @GetMapping
     public ResponseEntity<List<PackageTypeDTO>> getAllPackageTypes() {

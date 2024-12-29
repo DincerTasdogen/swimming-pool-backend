@@ -30,7 +30,7 @@ public class PackageType {
     private int sessionLimit;
 
     @Column(nullable = false, precision = 10)
-    private double price;
+    private Double price;
 
     @Column(nullable = false)
     private LocalTime startTime;

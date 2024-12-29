@@ -32,10 +32,12 @@ public class MemberPackage {
     private LocalDateTime purchaseDate;
 
     @Column(columnDefinition = "int default 0")
-    private int sessionsUsed;
+    private int sessionsRemaining;
 
     @Column(columnDefinition = "boolean default true")
-    private boolean isActive;
+    private boolean active;
+
+    private int poolId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

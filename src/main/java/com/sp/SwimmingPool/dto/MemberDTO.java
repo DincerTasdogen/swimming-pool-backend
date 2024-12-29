@@ -10,7 +10,6 @@ public class MemberDTO {
     private String name;
     private String surname;
     private String email;
-    private String password;
     private String identityNumber;
     private String gender;
     private double weight;

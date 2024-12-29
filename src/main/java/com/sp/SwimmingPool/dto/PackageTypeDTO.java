@@ -1,8 +1,10 @@
 package com.sp.SwimmingPool.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalTime;
 
 @NoArgsConstructor
@@ -13,7 +15,8 @@ public class PackageTypeDTO {
     private String name;
     private String description;
     private int sessionLimit;
-    private double price;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Double price;
     private LocalTime startTime;
     private LocalTime endTime;
     @JsonProperty("isEducationPackage")
@@ -26,7 +29,7 @@ public class PackageTypeDTO {
             String name,
             String description,
             int sessionLimit,
-            double price,
+            Double price,
             LocalTime startTime,
             LocalTime endTime,
             boolean isEducationPackage,

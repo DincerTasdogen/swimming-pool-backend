@@ -20,7 +20,6 @@ public class UserService {
         user.setName(userDTO.getName());
         user.setSurname(userDTO.getSurname());
         user.setEmail(userDTO.getEmail());
-        user.setPassword(userDTO.getPassword());
         user.setRole(userDTO.getRole());
         user.setMemberCount(userDTO.getMemberCount());
         user.setCreatedAt(userDTO.getCreatedAt());
@@ -43,7 +42,6 @@ public class UserService {
         user.setName(userDTO.getName());
         user.setSurname(userDTO.getSurname());
         user.setEmail(userDTO.getEmail());
-        user.setPassword(userDTO.getPassword());
         user.setRole(userDTO.getRole());
         user.setMemberCount(userDTO.getMemberCount());
         user.setCreatedAt(userDTO.getCreatedAt());
@@ -61,7 +59,6 @@ public class UserService {
             userDTO.setName(user.getName());
             userDTO.setSurname(user.getSurname());
             userDTO.setEmail(user.getEmail());
-            userDTO.setPassword(user.getPassword());
             userDTO.setRole(user.getRole());
             userDTO.setMemberCount(user.getMemberCount());
             userDTO.setCreatedAt(user.getCreatedAt());
@@ -78,7 +75,6 @@ public class UserService {
         userDTO.setName(user.getName());
         userDTO.setSurname(user.getSurname());
         userDTO.setEmail(user.getEmail());
-        userDTO.setPassword(user.getPassword());
         userDTO.setRole(user.getRole());
         userDTO.setMemberCount(user.getMemberCount());
         userDTO.setCreatedAt(user.getCreatedAt());
