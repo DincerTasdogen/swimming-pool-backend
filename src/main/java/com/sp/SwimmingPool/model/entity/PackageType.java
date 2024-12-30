@@ -44,6 +44,9 @@ public class PackageType {
     @Column(nullable = false)
     private boolean requiresSwimmingAbility;
 
+    @Column(nullable = false)
+    private boolean multiplePools;
+
     @Column(columnDefinition = "boolean default true")
     private boolean isActive;
 

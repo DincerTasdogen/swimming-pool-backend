@@ -24,25 +24,25 @@ public class MemberCreationTests {
     private PasswordEncoder passwordEncoder;
     @Test
     public void saveMemberToDB() {
-        String memberEmail = "member@member.com";
+        String memberEmail = "member2@member.com"; //"member@member.com";
 
-        String password = "member123";  
+        String password = "member123456";//"member123";
 
         if(memberRepository.findByEmail(memberEmail).isEmpty()) {
             Member member = Member.builder()
-                    .identityNumber("11111111111")
+                    .identityNumber("11111111110")
                     .email(memberEmail)
                     .password(passwordEncoder.encode(password))
-                    .name("Member")
-                    .surname("Membran")
-                    .birthDate(LocalDate.of(2024, 11, 25))
-                    .gender(MemberGenderEnum.FEMALE)
-                    .weight(100.0)
-                    .height(180.5)
-                    .phoneNumber("+905555555555")
+                    .name("Member2")
+                    .surname("member123456")
+                    .birthDate(LocalDate.of(2000, 1, 1))
+                    .gender(MemberGenderEnum.MALE)
+                    .weight(62.0)
+                    .height(165.0)
+                    .phoneNumber("+905000000000")
                     .idPhotoBack("IMGPATH")
                     .idPhotoFront("IMGPATH")
-                    .photo("IMGPATH")
+                    .photo("https://cdn-icons-png.flaticon.com/512/5556/5556468.png")
                     .canSwim(false)
                     .coachId(1)
                     .status(StatusEnum.ACTIVE)

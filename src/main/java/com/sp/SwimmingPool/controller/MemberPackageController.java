@@ -21,6 +21,12 @@ public class MemberPackageController {
         return ResponseEntity.ok(activePackages);
     }
 
+    @GetMapping("/previous/{memberId}")
+    public ResponseEntity<List<MemberPackageDTO>> getPreviousMemberPackages(@PathVariable int memberId) {
+        List<MemberPackageDTO> previousPackages = packageService.getPreviousMemberPackages(memberId);
+        return ResponseEntity.ok(previousPackages);
+    }
+
     @GetMapping("/can-buy/{memberId}")
     public ResponseEntity<Boolean> canBuyPackage(
             @PathVariable int memberId,
