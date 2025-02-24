@@ -10,6 +10,7 @@ import java.util.List;
 public interface MemberPackageRepository extends JpaRepository<MemberPackage, Integer> {
     List<MemberPackage> findByMemberIdAndActiveTrue(int memberId);
     List<MemberPackage> findByMemberIdAndActiveFalse(int memberId);
+    List<MemberPackage> findByMemberId(int memberId);
     boolean existsByMemberIdAndActiveTrue(int memberId);
     boolean existsByMemberIdAndActiveTrueAndPoolIdIsNull(int memberId);
     boolean existsByMemberIdAndActiveTrueAndPoolId(int memberId, int poolId);

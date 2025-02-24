@@ -97,6 +97,13 @@ public class PackageService {
                 .collect(Collectors.toList());
     }
 
+    public List<MemberPackageDTO> getMemberPackages(int memberId) {
+        List<MemberPackage> packages = memberPackageRepository.findByMemberId(memberId);
+        return packages.stream()
+                .map(MemberPackageDTO::createFromMemberPackage)
+                .collect(Collectors.toList());
+    }
+
     public boolean canBuyPackage(int memberId, Integer newPoolId) {
         if(memberPackageRepository.existsByMemberIdAndActiveTrueAndPoolIdIsNull(memberId)) {
             return false;

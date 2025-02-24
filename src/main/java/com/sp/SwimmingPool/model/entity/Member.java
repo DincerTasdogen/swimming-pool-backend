@@ -2,7 +2,6 @@ package com.sp.SwimmingPool.model.entity;
 
 import com.sp.SwimmingPool.model.enums.MemberGenderEnum;
 import com.sp.SwimmingPool.model.enums.StatusEnum;
-import com.sp.SwimmingPool.model.enums.UserRoleEnum;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
@@ -61,13 +60,13 @@ public class Member {
 
     private String phoneNumber;
 
-    @Column(nullable = false)
+    @Column
     private String idPhotoFront;
 
-    @Column(nullable = false)
+    @Column
     private String idPhotoBack;
 
-    @Column(nullable = false)
+    @Column
     private String photo;
 
     @Column(columnDefinition = "boolean default false")
@@ -76,7 +75,8 @@ public class Member {
     private Integer coachId;
 
     @Enumerated(EnumType.STRING)
-    private StatusEnum status;
+    @Column(nullable = false)
+    private StatusEnum status = StatusEnum.PENDING_ID_CARD_VERIFICATION; // Setting default status
 
     @Column(columnDefinition = "boolean default false")
     private boolean photoVerified;
@@ -92,7 +92,6 @@ public class Member {
 
     @Column(columnDefinition = "timestamp default CURRENT_TIMESTAMP")
     private LocalDateTime updatedAt;
-
 
     @Builder
     public Member(
@@ -132,10 +131,10 @@ public class Member {
         this.photo = photo;
         this.canSwim = canSwim;
         this.coachId = coachId;
-        this.status = status;
+        this.status = status != null ? status : StatusEnum.PENDING_ID_CARD_VERIFICATION;
         this.photoVerified = photoVerified;
         this.idVerified = idVerified;
-        this.registrationDate = registrationDate;
-        this.updatedAt = updatedAt;
+        this.registrationDate = registrationDate != null ? registrationDate : LocalDateTime.now();
+        this.updatedAt = updatedAt != null ? updatedAt : LocalDateTime.now();
     }
 }

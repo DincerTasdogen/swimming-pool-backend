@@ -6,14 +6,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RegisterRequest {
-
+public class InitialRegisterRequest {
     @NotBlank(message = "Name is required")
     @Size(min = 2, max = 50, message = "Name must be between 2 and 50 characters")
     private String name;
@@ -37,23 +34,4 @@ public class RegisterRequest {
     @NotBlank(message = "Identity number is required")
     @Pattern(regexp = "\\d{11}", message = "Identity number must be 11 digits")
     private String identityNumber;
-
-    @NotNull(message = "Birth date is required")
-    private LocalDate birthDate;
-
-    @NotNull(message = "Height is required")
-    @Min(value = 50, message = "Height must be at least 50 cm")
-    @Max(value = 250, message = "Height must be at most 250 cm")
-    private Double height;
-
-    @NotNull(message = "Weight is required")
-    @Min(value = 20, message = "Weight must be at least 20 kg")
-    @Max(value = 200, message = "Weight must be at most 200 kg")
-    private Double weight;
-
-    @NotBlank(message = "Gender is required")
-    @Pattern(regexp = "MALE|FEMALE|OTHER", message = "Gender must be MALE, FEMALE or OTHER")
-    private String gender;
-
-    private boolean canSwim;
 }

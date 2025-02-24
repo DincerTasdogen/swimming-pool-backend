@@ -1,6 +1,7 @@
 package com.sp.SwimmingPool.controller;
 
 import com.sp.SwimmingPool.dto.MemberPackageDTO;
+import com.sp.SwimmingPool.model.entity.MemberPackage;
 import com.sp.SwimmingPool.service.PackageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,12 @@ import java.util.List;
 public class MemberPackageController {
     @Autowired
     private PackageService packageService;
+
+    @GetMapping("/all/{memberId}")
+    public ResponseEntity<List<MemberPackageDTO>> getAllMemberPackages(@PathVariable int memberId) {
+        List<MemberPackageDTO> packages = packageService.getMemberPackages(memberId);
+        return ResponseEntity.ok(packages);
+    }
 
     @GetMapping("/active/{memberId}")
     public ResponseEntity<List<MemberPackageDTO>> getActiveMemberPackages(@PathVariable int memberId) {
