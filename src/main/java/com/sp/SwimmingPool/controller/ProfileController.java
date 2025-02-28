@@ -38,4 +38,25 @@ public class ProfileController {
         }
         return ResponseEntity.notFound().build();
     }
+
+    @PutMapping("/staff/{id}")
+    public ResponseEntity<?> updateStaffProfileDetails(@PathVariable int id, @RequestBody UserDTO userDTO) {
+        try {
+            userService.updateUser(id, userDTO);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/member/{id}")
+    public ResponseEntity<?> updateMemberProfileDetails(@PathVariable int id, @RequestBody MemberDTO memberDTO) {
+        try {
+            memberService.updateMember(id, memberDTO);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+
+        return ResponseEntity.ok().build();
+    }
 }

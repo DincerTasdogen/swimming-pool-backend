@@ -1,16 +1,23 @@
 package com.sp.SwimmingPool.model.entity;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "pool")
 @Getter
 @Setter
 public class Pool {
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,6 +28,9 @@ public class Pool {
 
     @Column(nullable = false)
     private String location;
+
+    @Column(nullable = false)
+    private String city;
 
     @Column(precision = 10)
     private Double latitude;
@@ -40,6 +50,15 @@ public class Pool {
     @Column(nullable = false)
     private String closeAt;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "features_json", columnDefinition = "TEXT")
+    private String featuresJson;
+
+    @Transient
+    private List<String> features;
+
     @Column(columnDefinition = "boolean default true")
     private boolean isActive;
 
@@ -49,4 +68,31 @@ public class Pool {
     @Column(columnDefinition = "timestamp default CURRENT_TIMESTAMP")
     private LocalDateTime updatedAt;
 
+    // Convert between JSON string and List when getting features
+    public List<String> getFeatures() {
+        if (features != null) {
+            return features;
+        }
+
+        if (featuresJson == null || featuresJson.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        try {
+            features = objectMapper.readValue(featuresJson, new TypeReference<List<String>>() {});
+            return features;
+        } catch (JsonProcessingException e) {
+            return new ArrayList<>();
+        }
+    }
+
+    // Convert between List and JSON string when setting features
+    public void setFeatures(List<String> features) {
+        this.features = features;
+        try {
+            this.featuresJson = objectMapper.writeValueAsString(features);
+        } catch (JsonProcessingException e) {
+            this.featuresJson = "[]";
+        }
+    }
 }

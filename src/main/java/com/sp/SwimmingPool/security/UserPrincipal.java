@@ -5,26 +5,27 @@ import com.sp.SwimmingPool.model.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
 @AllArgsConstructor
-public class UserPrincipal implements UserDetails {
+public class UserPrincipal implements UserDetails, OAuth2User {
     private Integer id;
     private String email;
-    @Getter
     private String name;
     private String password;
     private String role;
     private String userType;
     private Collection<? extends GrantedAuthority> authorities;
+    private Map<String, Object> attributes;
 
     public static UserPrincipal createFromUser(User user) {
         List<GrantedAuthority> authorities = List.of(
@@ -58,9 +59,15 @@ public class UserPrincipal implements UserDetails {
                 .build();
     }
 
+    public static UserPrincipal create(Member member, Map<String, Object> attributes) {
+        UserPrincipal userPrincipal = UserPrincipal.createFromMember(member);
+        userPrincipal.setAttributes(attributes);
+        return userPrincipal;
+    }
+
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return authorities;
+    public String getPassword() {
+        return password;
     }
 
     @Override
@@ -86,5 +93,20 @@ public class UserPrincipal implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    @Override
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return authorities;
+    }
+
+    @Override
+    public String getName() {
+        return String.valueOf(name);
     }
 }
