@@ -1,5 +1,6 @@
 package com.sp.SwimmingPool.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,7 +54,11 @@ public class Pool {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column
+    private String imagePath;
+
     @Column(name = "features_json", columnDefinition = "TEXT")
+    @JsonIgnore
     private String featuresJson;
 
     @Transient
@@ -90,7 +95,9 @@ public class Pool {
     public void setFeatures(List<String> features) {
         this.features = features;
         try {
-            this.featuresJson = objectMapper.writeValueAsString(features);
+            this.featuresJson = (features != null && !features.isEmpty())
+                    ? objectMapper.writeValueAsString(features)
+                    : "[]";
         } catch (JsonProcessingException e) {
             this.featuresJson = "[]";
         }

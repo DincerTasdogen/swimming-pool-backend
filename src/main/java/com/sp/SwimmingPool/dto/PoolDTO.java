@@ -18,6 +18,7 @@ public class PoolDTO {
     private String openAt;
     private String closeAt;
     private String description;
+    private String imagePath;
     private List<String> features;
     private boolean isActive;
 

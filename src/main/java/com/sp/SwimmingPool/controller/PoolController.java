@@ -10,7 +10,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -30,6 +33,12 @@ public class PoolController {
         return ResponseEntity.ok(pools);
     }
 
+    @GetMapping("/random/{count}")
+    public ResponseEntity<List<Pool>> getRandomPools(@PathVariable int count) {
+        List<Pool> pools = poolService.getRandomPools(count);
+        return ResponseEntity.ok(pools);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Pool> getPoolById(@PathVariable int id) {
         Optional<Pool> pool = poolService.findById(id);
@@ -39,48 +48,73 @@ public class PoolController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Pool> createPool(@RequestBody PoolDTO poolDTO) {
-        Pool newPool = convertToEntity(poolDTO);
-        newPool.setCreatedAt(LocalDateTime.now());
-        newPool.setUpdatedAt(LocalDateTime.now());
+    public ResponseEntity<?> createPool(@RequestBody PoolDTO poolDTO) {
+        try {
+            Pool newPool = convertToEntity(poolDTO);
+            newPool.setCreatedAt(LocalDateTime.now());
+            newPool.setUpdatedAt(LocalDateTime.now());
 
-        Pool savedPool = poolService.save(newPool);
-        return new ResponseEntity<>(savedPool, HttpStatus.CREATED);
+            Pool savedPool = poolService.save(newPool);
+            return new ResponseEntity<>(savedPool, HttpStatus.CREATED);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to create pool: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Pool> updatePool(@PathVariable int id, @RequestBody PoolDTO poolDTO) {
-        Optional<Pool> existingPool = poolService.findById(id);
+    public ResponseEntity<?> updatePool(@PathVariable int id, @RequestBody PoolDTO poolDTO) {
+        try {
+            Optional<Pool> existingPool = poolService.findById(id);
 
-        if (existingPool.isPresent()) {
-            Pool pool = existingPool.get();
+            if (existingPool.isPresent()) {
+                Pool pool = existingPool.get();
 
-            pool.setName(poolDTO.getName());
-            pool.setLocation(poolDTO.getLocation());
-            pool.setCity(poolDTO.getCity());
-            pool.setLatitude(poolDTO.getLatitude());
-            pool.setLongitude(poolDTO.getLongitude());
-            pool.setDepth(poolDTO.getDepth());
-            pool.setCapacity(poolDTO.getCapacity());
-            pool.setOpenAt(poolDTO.getOpenAt());
-            pool.setCloseAt(poolDTO.getCloseAt());
-            pool.setActive(poolDTO.isActive());
+                // Log before update for debugging
+                System.out.println("Before update - Features JSON: " + pool.getFeaturesJson());
 
-            // Optional fields
-            if (poolDTO.getDescription() != null) {
-                pool.setDescription(poolDTO.getDescription());
+                pool.setName(poolDTO.getName());
+                pool.setLocation(poolDTO.getLocation());
+                pool.setCity(poolDTO.getCity());
+                pool.setLatitude(poolDTO.getLatitude());
+                pool.setLongitude(poolDTO.getLongitude());
+                pool.setDepth(poolDTO.getDepth());
+                pool.setCapacity(poolDTO.getCapacity());
+                pool.setOpenAt(poolDTO.getOpenAt());
+                pool.setCloseAt(poolDTO.getCloseAt());
+                pool.setActive(poolDTO.isActive());
+
+                // Optional fields
+                if (poolDTO.getDescription() != null) {
+                    pool.setDescription(poolDTO.getDescription());
+                }
+
+                // Handle image path update if provided
+                if (poolDTO.getImagePath() != null && !poolDTO.getImagePath().isEmpty()) {
+                    pool.setImagePath(poolDTO.getImagePath());
+                }
+
+                // Update features - ensure we're always explicitly setting features
+                pool.setFeatures(poolDTO.getFeatures() != null ? poolDTO.getFeatures() : new ArrayList<>());
+
+                pool.setUpdatedAt(LocalDateTime.now());
+
+                // Log after update for debugging
+                System.out.println("After update - Features JSON: " + pool.getFeaturesJson());
+
+                Pool updatedPool = poolService.save(pool);
+                return ResponseEntity.ok(updatedPool);
+            } else {
+                return ResponseEntity.notFound().build();
             }
-            if (poolDTO.getFeatures() != null) {
-                pool.setFeatures(poolDTO.getFeatures());
-            }
-
-            pool.setUpdatedAt(LocalDateTime.now());
-
-            Pool updatedPool = poolService.save(pool);
-            return ResponseEntity.ok(updatedPool);
-        } else {
-            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to update pool: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
@@ -123,9 +157,14 @@ public class PoolController {
         if (poolDTO.getDescription() != null) {
             pool.setDescription(poolDTO.getDescription());
         }
-        if (poolDTO.getFeatures() != null) {
-            pool.setFeatures(poolDTO.getFeatures());
+
+        // Handle image path if provided
+        if (poolDTO.getImagePath() != null && !poolDTO.getImagePath().isEmpty()) {
+            pool.setImagePath(poolDTO.getImagePath());
         }
+
+        // Always explicitly set features, even if null
+        pool.setFeatures(poolDTO.getFeatures() != null ? poolDTO.getFeatures() : new ArrayList<>());
 
         return pool;
     }

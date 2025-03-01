@@ -19,6 +19,10 @@ public class PoolService {
         this.poolRepository = poolRepository;
     }
 
+    public List<Pool> getRandomPools(int count) {
+        return poolRepository.findRandomPools(count);
+    }
+
     public Pool save(Pool pool) {
         return poolRepository.save(pool);
     }

@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable()) // Enable if not using tokens
                 .authorizeHttpRequests( auth -> auth
+                        .requestMatchers(HttpMethod.GET,"/public/uploads/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/packages/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/pools/**").permitAll()
@@ -83,7 +84,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://10.200.91.210:3000"));
+        config.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:5173", "http://10.200.91.210:3000"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("Content-Type", "Authorization", "Cookie")); // Add Cookie
         config.setExposedHeaders(Arrays.asList("Set-Cookie"));
