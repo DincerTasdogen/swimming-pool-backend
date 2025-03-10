@@ -24,7 +24,7 @@ public class PackageTypeController {
             dto.setPrice(null);
         }
         return dto;
-    };
+    }
 
     @GetMapping
     public ResponseEntity<List<PackageTypeDTO>> getAllPackageTypes() {
@@ -70,7 +70,6 @@ public class PackageTypeController {
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
         } catch (Exception e) {
-            e.printStackTrace();  // Add this
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

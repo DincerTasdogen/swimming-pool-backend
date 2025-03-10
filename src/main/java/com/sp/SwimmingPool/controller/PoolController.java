@@ -57,7 +57,6 @@ public class PoolController {
             Pool savedPool = poolService.save(newPool);
             return new ResponseEntity<>(savedPool, HttpStatus.CREATED);
         } catch (Exception e) {
-            e.printStackTrace();
             Map<String, String> error = new HashMap<>();
             error.put("message", "Failed to create pool: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
@@ -111,7 +110,6 @@ public class PoolController {
                 return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            e.printStackTrace();
             Map<String, String> error = new HashMap<>();
             error.put("message", "Failed to update pool: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);

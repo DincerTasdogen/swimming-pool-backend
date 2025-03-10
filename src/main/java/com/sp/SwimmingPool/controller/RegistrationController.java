@@ -23,6 +23,16 @@ public class RegistrationController {
 
     @PostMapping("/register/init")
     public ResponseEntity<?> initiateRegistration(@Valid @RequestBody InitialRegisterRequest request) {
+        // Check if email is already registered
+        if (registrationService.isEmailRegistered(request.getEmail())) {
+            return ResponseEntity.badRequest().body("Bu e-posta adresi zaten kayıtlıdır");
+        }
+
+        // Check if identity number is already registered
+        if (registrationService.isIdentityNumberRegistered(request.getIdentityNumber())) {
+            return ResponseEntity.badRequest().body("Bu T.C. Kimlik numarası zaten kayıtlıdır");
+        }
+
         // Store initial registration data
         Map<String, Object> userData = new HashMap<>();
         userData.put("name", request.getName());
@@ -35,6 +45,20 @@ public class RegistrationController {
         // Generate and send verification code
         String code = verificationService.generateAndStoreCode(request.getEmail(), userData);
         emailService.sendVerificationEmail(request.getEmail(), code);
+
+        return ResponseEntity.ok().build();
+    }
+
+    // New endpoint for updating registration data without sending verification emails
+    @PostMapping("/register/update-data")
+    public ResponseEntity<?> updateRegistrationData(@RequestParam String email, @RequestBody Map<String, Object> updateData) {
+        Map<String, Object> userData = verificationService.getTempUserData(email);
+        if (userData == null) {
+            return ResponseEntity.badRequest().body("No registration in progress");
+        }
+
+        // Update the user data with the new values
+        verificationService.updateTempUserData(email, updateData);
 
         return ResponseEntity.ok().build();
     }

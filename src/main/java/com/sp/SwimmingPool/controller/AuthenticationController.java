@@ -22,7 +22,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -66,73 +68,98 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register/oauth")
-    public ResponseEntity<?> registerOAuthUser(@Valid @RequestBody OAuthRegisterRequest request,
+    public ResponseEntity<?> registerOAuthUser(@RequestBody Map<String, Object> oauthData,
                                                HttpServletResponse response) {
         try {
+            // Validate required fields
+            String email = (String) oauthData.get("email");
+            String name = (String) oauthData.get("name");
+            String surname = (String) oauthData.get("surname");
+            String provider = (String) oauthData.get("provider");
+            String identityNumber = (String) oauthData.get("identityNumber");
+
+            if (email == null || name == null || surname == null || provider == null) {
+                return ResponseEntity.badRequest().body("Missing required OAuth data");
+            }
+
             // Check if email exists
-            if (registrationService.isEmailRegistered(request.getEmail())) {
-                return ResponseEntity
-                        .badRequest()
-                        .body("Email already registered");
+            if (registrationService.isEmailRegistered(email)) {
+                return ResponseEntity.badRequest().body("Email already registered");
             }
 
-            // Check if identity number exists
-            if (registrationService.isIdentityNumberRegistered(request.getIdentityNumber())) {
-                return ResponseEntity
-                        .badRequest()
-                        .body("Identity number already registered");
+            // Check if identity number exists (if provided)
+            if (identityNumber != null && registrationService.isIdentityNumberRegistered(identityNumber)) {
+                return ResponseEntity.badRequest().body("Identity number already registered");
             }
 
-            // Convert OAuth request to RegisterRequest
-            RegisterRequest registerRequest = RegisterRequest.builder()
-                    .email(request.getEmail())
-                    .name(request.getName())
-                    .surname(request.getSurname())
-                    .phoneNumber(request.getPhoneNumber())
-                    .identityNumber(request.getIdentityNumber())
-                    .birthDate(request.getBirthDate())
-                    .height(request.getHeight())
-                    .weight(request.getWeight())
-                    .gender(request.getGender())
-                    .canSwim(request.isCanSwim())
-                    // Generate a random password for OAuth users
-                    // (they will authenticate through OAuth provider, not password)
-                    .password(UUID.randomUUID().toString())
-                    .build();
+            // Determine if this is initial data collection or final registration
+            boolean isComplete = isOAuthRegistrationComplete(oauthData);
 
-            // Register the user
-            Member member = registrationService.register(registerRequest);
+            if (!isComplete) {
+                // Store the partial data for later completion
+                registrationService.storeOAuthTempData(oauthData);
+                return ResponseEntity.ok().build();
+            } else {
+                // This is the final step - convert to RegisterRequest and complete registration
+                RegisterRequest registerRequest = createRegisterRequestFromOAuthData(oauthData);
 
-            // Generate authentication and token for the newly registered user
-            Authentication authentication = new UsernamePasswordAuthenticationToken(
-                    UserPrincipal.createFromMember(member), null, List.of(new SimpleGrantedAuthority("ROLE_MEMBER"))
-            );
+                // Register the user (with generated password handled in the service)
+                Member member = registrationService.register(registerRequest);
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            String jwt = jwtTokenProvider.generateToken(authentication);
+                // Generate authentication and token for the newly registered user
+                Authentication authentication = new UsernamePasswordAuthenticationToken(
+                        UserPrincipal.createFromMember(member), null,
+                        List.of(new SimpleGrantedAuthority("ROLE_MEMBER"))
+                );
 
-            // Set authentication cookie using cookieService
-            cookieService.createAuthCookie(jwt, response);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                String jwt = jwtTokenProvider.generateToken(authentication);
 
-            // Return user info without the token (since it's in the cookie)
-            AuthResponse authResponse = AuthResponse.builder()
-                    .id(member.getId())
-                    .email(member.getEmail())
-                    .name(member.getName())
-                    .role("MEMBER")
-                    .userType("MEMBER")
-                    .build();
+                // Set authentication cookie
+                cookieService.createAuthCookie(jwt, response);
 
-            return ResponseEntity.ok(authResponse);
+                // Return user info
+                AuthResponse authResponse = AuthResponse.builder()
+                        .id(member.getId())
+                        .email(member.getEmail())
+                        .name(member.getName())
+                        .role("MEMBER")
+                        .userType("MEMBER")
+                        .build();
+
+                return ResponseEntity.ok(authResponse);
+            }
         } catch (Exception e) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-//    @PostMapping("/register")
-//    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
-//        return ResponseEntity.ok(registrationService.register(request));
-//    }
+    // Helper method to check if the OAuth registration data is complete
+    private boolean isOAuthRegistrationComplete(Map<String, Object> oauthData) {
+        // Check if we have all required fields to complete registration
+        return oauthData.containsKey("phoneNumber") &&
+                oauthData.containsKey("identityNumber") &&
+                oauthData.containsKey("birthDate") &&
+                oauthData.containsKey("height") &&
+                oauthData.containsKey("weight") &&
+                oauthData.containsKey("gender");
+    }
+
+    // Helper method to create RegisterRequest from OAuth data
+    private RegisterRequest createRegisterRequestFromOAuthData(Map<String, Object> oauthData) {
+        return RegisterRequest.builder()
+                .email((String) oauthData.get("email"))
+                .name((String) oauthData.get("name"))
+                .surname((String) oauthData.get("surname"))
+                .phoneNumber((String) oauthData.get("phoneNumber"))
+                .identityNumber((String) oauthData.get("identityNumber"))
+                .birthDate(LocalDate.parse((String) oauthData.get("birthDate")))
+                .height(Double.parseDouble(oauthData.get("height").toString()))
+                .weight(Double.parseDouble(oauthData.get("weight").toString()))
+                .gender((String) oauthData.get("gender"))
+                .canSwim(Boolean.parseBoolean(oauthData.get("canSwim").toString()))
+                // Generate a random password for OAuth users
+                .password(UUID.randomUUID().toString())
+                .build();
+    }
 }

@@ -23,15 +23,15 @@ public class RegisterRequest {
     private String surname;
 
     @NotBlank(message = "Email is required")
-    @Email(message = "Invalid email format")
+    @Email(message = "Email should be valid")
     private String email;
 
     @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters long")
+    @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
 
     @NotBlank(message = "Phone number is required")
-    @Pattern(regexp = "\\+90\\d{10}", message = "Phone number must start with +90 followed by 10 digits")
+    @Pattern(regexp = "\\+90\\d{10}", message = "Phone number must start with +90 and contain 10 digits")
     private String phoneNumber;
 
     @NotBlank(message = "Identity number is required")
@@ -43,17 +43,23 @@ public class RegisterRequest {
 
     @NotNull(message = "Height is required")
     @Min(value = 50, message = "Height must be at least 50 cm")
-    @Max(value = 250, message = "Height must be at most 250 cm")
     private Double height;
 
     @NotNull(message = "Weight is required")
     @Min(value = 20, message = "Weight must be at least 20 kg")
-    @Max(value = 200, message = "Weight must be at most 200 kg")
     private Double weight;
 
     @NotBlank(message = "Gender is required")
-    @Pattern(regexp = "MALE|FEMALE|OTHER", message = "Gender must be MALE, FEMALE or OTHER")
     private String gender;
 
     private boolean canSwim;
+
+    private String doctorToldCondition;
+    private String chestPain;
+    private String dizziness;
+
+    // Document paths stored by the storage service
+    private String photo;
+    private String idPhotoFront;
+    private String idPhotoBack;
 }

@@ -97,7 +97,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 }
 
                 // Build the redirect URL with hardcoded frontend URL to avoid path issues
-                StringBuilder urlBuilder = new StringBuilder("http://localhost:3000/register/oauth?");
+                StringBuilder urlBuilder = new StringBuilder("http://localhost:3000/register?");
 
                 // Manually build query parameters - avoid potential URI encoding issues
                 if (email != null) {
