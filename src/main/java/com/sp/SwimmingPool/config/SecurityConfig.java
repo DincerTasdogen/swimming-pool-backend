@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable()) // Enable if not using tokens
                 .authorizeHttpRequests( auth -> auth
+                        .requestMatchers("/email/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/public/uploads/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/packages/**").permitAll()

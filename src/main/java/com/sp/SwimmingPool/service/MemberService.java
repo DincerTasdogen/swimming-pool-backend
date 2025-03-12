@@ -5,6 +5,7 @@ import com.sp.SwimmingPool.model.entity.Member;
 import com.sp.SwimmingPool.model.enums.MemberGenderEnum;
 import com.sp.SwimmingPool.repos.MemberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -15,6 +16,8 @@ public class MemberService {
 
     @Autowired
     private MemberRepository memberRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public MemberDTO createMember(MemberDTO memberDTO) {
         Member member = new Member();
@@ -53,6 +56,13 @@ public class MemberService {
 
         memberRepository.save(member);
         return memberDTO;
+    }
+
+    public void updatePassword(String email, String password) {
+        Member member = memberRepository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException("Member not found with email: " + email));
+        String encodedPassword = passwordEncoder.encode(password);
+        member.setPassword(encodedPassword);
+        memberRepository.save(member);
     }
 
     public void deleteMember(int id){

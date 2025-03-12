@@ -33,7 +33,6 @@ public class FileUploadController {
         try {
             String filePath = storageService.storeFile(file, "pools");
 
-            // Return the path to be stored in the database
             Map<String, String> response = new HashMap<>();
             response.put("path", filePath);
             return ResponseEntity.ok(response);

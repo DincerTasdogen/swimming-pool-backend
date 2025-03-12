@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
+    <title>Swimming Pool - Doğrulama Kodu</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            color-scheme: light dark;
+            supported-color-schemes: light dark;
+        }
+
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            margin: 0;
+            padding: 40px 0;
+            background: #f8faff;
+        }
+
+        /* Dark mode overrides */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #202124;
+            }
+            .email-container {
+                background: #303134;
+            }
+            h1 {
+                color: #f1f1f1;
+            }
+            p {
+                color: #dddddd;
+            }
+            .footer {
+                background: #202124;
+                color: #cccccc;
+            }
+            .help-text {
+                color: #dddddd;
+            }
+            .logo-text {
+                color: #a98df8;
+            }
+            .highlight {
+                color: #a98df8;
+            }
+        }
+
+        .email-container {
+            max-width: 640px;
+            margin: 20px auto;
+            border-radius: 20px;
+            background: #ffffff;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(6, 52, 98, 0.08);
+            position: relative;
+        }
+        .header {
+            background: #ffffff;
+            padding: 28px 32px;
+            text-align: left;
+            border-bottom: 3px solid #6a42c2;
+            position: relative;
+            overflow: hidden;
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+        .logo-image {
+            width: 50px;
+            height: 50px;
+            margin-right: 15px;
+            /* Force the original colors even in dark mode */
+            filter: none !important;
+            -webkit-filter: none !important;
+        }
+        .logo-text {
+            color: #6a42c2;
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            padding-top: 2px;
+        }
+        .content {
+            padding: 40px 32px;
+        }
+        h1 {
+            color: #1a1a1a;
+            font-size: 28px;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        p {
+            color: #555;
+            font-size: 16px;
+            line-height: 1.7;
+            margin-bottom: 24px;
+        }
+        .verification-container {
+            margin: 40px 0;
+            position: relative;
+            text-align: center;
+        }
+        .verification-code {
+            background: #6a42c2;
+            border-radius: 16px;
+            padding: 24px 40px;
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: 6px;
+            color: #ffffff;
+            display: inline-block;
+            box-shadow: 0 8px 20px rgba(106, 66, 194, 0.25);
+            position: relative;
+            overflow: hidden;
+        }
+        .highlight {
+            color: #6a42c2;
+            font-weight: 600;
+        }
+        .footer {
+            background: #f9fbff;
+            padding: 28px;
+            text-align: center;
+            font-size: 13px;
+            color: #666;
+            border-top: 1px solid rgba(106, 66, 194, 0.1);
+        }
+        .help-text {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            line-height: 1.6;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        /* Success icon for approval emails */
+        .success-icon {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .success-icon img {
+            width: 80px;
+            height: 80px;
+            /* Prevent dark mode from affecting images */
+            filter: none !important;
+            -webkit-filter: none !important;
+        }
+
+        /* Prevent dark mode effects on images */
+        img {
+            color-scheme: light;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <div class="logo-container">
+            <img class="logo-image" src="https://i.ibb.co/RkYbX6MN/sp-ezgif-com-svg-to-png-converter.png" alt="Logo">
+            <div class="logo-text">Swimming Pool</div>
+        </div>
+    </div>
+    <div class="content">
+        <h1>Şifrenizi mi unuttunuz?</h1>
+        <p>Merak etmeyin, bu çok kolay çözülebilir! Güvenliğiniz için şifre sıfırlama işleminizi hızlıca tamamlayabilirsiniz.</p>
+
+        <div class="verification-container">
+            <div class="verification-code">789432</div>
+        </div>
+
+        <p class="help-text">
+            <span class="highlight">15 dakika</span> içinde geçerli olan bu kodu kullanarak şifrenizi sıfırlayabilirsiniz.
+            Eğer bu talebi siz yapmadıysanız lütfen hesabınızı kontrol edin.
+        </p>
+
+        <!--
+        <div class="success-icon">
+            <img src="https://cdn-icons-png.flaticon.com/512/7518/7518748.png" alt="Success" />
+        </div>
+        -->
+    </div>
+    <div class="footer">
+        &copy; 2025 Swimming Pool · Tüm Hakkı Saklıdır
+    </div>
+</div>
+</body>
+</html>

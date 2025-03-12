@@ -2,14 +2,12 @@ package com.sp.SwimmingPool.controller;
 
 import com.sp.SwimmingPool.dto.AuthResponse;
 import com.sp.SwimmingPool.dto.LoginRequest;
-import com.sp.SwimmingPool.dto.OAuthRegisterRequest;
 import com.sp.SwimmingPool.dto.RegisterRequest;
 import com.sp.SwimmingPool.model.entity.Member;
+import com.sp.SwimmingPool.repos.MemberRepository;
 import com.sp.SwimmingPool.security.JwtTokenProvider;
 import com.sp.SwimmingPool.security.UserPrincipal;
-import com.sp.SwimmingPool.service.AuthService;
-import com.sp.SwimmingPool.service.CookieService;
-import com.sp.SwimmingPool.service.RegistrationService;
+import com.sp.SwimmingPool.service.*;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -35,6 +34,10 @@ public class AuthenticationController {
     private final RegistrationService registrationService;
     private final CookieService cookieService;
     private final JwtTokenProvider jwtTokenProvider;
+    private final VerificationService verificationService;
+    private final EmailService emailService;
+    private final MemberRepository memberRepository;
+    private final MemberService memberService;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(
@@ -162,4 +165,81 @@ public class AuthenticationController {
                 .password(UUID.randomUUID().toString())
                 .build();
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        if (email == null || email.isEmpty()) {
+            return ResponseEntity.badRequest().body("Email gerekli.");
+        }
+
+        Member member = memberRepository.findByEmail(email).orElse(null);
+
+        if (member == null) {
+            return ResponseEntity.ok().body("Doğrulama E-Postası gönderildi!");
+        }
+        Map<String, Object> tempData = Map.of(
+                "resetRequested", LocalDateTime.now().toString()
+        );
+
+        String verificationCode = verificationService.generateAndStoreCode(email, tempData);
+
+        try {
+            emailService.sendPasswordResetEmail(email, verificationCode);
+            return ResponseEntity.ok().body("Doğrulama E-Postası gönderildi!");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("E-Posta gönderilirken bir hata oluştu.");
+        }
+    }
+
+    @PostMapping("/verify-reset-code")
+    public ResponseEntity<?> verifyResetCode(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String code = request.get("code");
+
+        if (email == null || email.isEmpty()) {
+            return ResponseEntity.badRequest().body("Email gerekli.");
+        }
+
+        if (code == null || code.isEmpty()) {
+            return ResponseEntity.badRequest().body("Doğrulama kodu gerekli.");
+        }
+
+        boolean isValid = verificationService.verifyCode(email, code);
+        if (!isValid) {
+            return ResponseEntity.badRequest().body("Doğrulama kodu yanlış ya da süresi geçmiş.");
+        }
+
+        verificationService.extendVerificationExpiry(email, 5);
+        return ResponseEntity.ok().body("E-posta adresinizi doğruladınız! Şifrenizi şimdi yenileyebilirsiniz.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String code = request.get("code");
+        String newPassword = request.get("newPassword");
+
+        if (email == null || email.isEmpty() || code == null || code.isEmpty() || newPassword == null || newPassword.isEmpty()) {
+            return ResponseEntity.badRequest().body("Parametrelerden en az biri eksik.");
+        }
+
+        boolean isValid = verificationService.verifyCode(email, code);
+        if (!isValid) {
+            return ResponseEntity.badRequest().body("Doğrulama kodu yanlış ya da süresi geçmiş.");
+        }
+
+        try {
+            memberRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Üye bulunamadı"));
+            memberService.updatePassword(email, newPassword);
+            verificationService.removeVerificationData(email);
+
+            return ResponseEntity.ok().body("Şifreniz başarıyla güncellendi.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Şifre sıfırlanırken bir hata oluştu: " + e.getMessage());
+        }
+    }
+
 }
