@@ -19,13 +19,6 @@ public class PackageTypeController {
     @Autowired
     private PackageService packageService;
 
-    private PackageTypeDTO filterSensitiveData(PackageTypeDTO dto, boolean isAuthenticated) {
-        if (!isAuthenticated) {
-            dto.setPrice(null);
-        }
-        return dto;
-    }
-
     @GetMapping
     public ResponseEntity<List<PackageTypeDTO>> getAllPackageTypes() {
         try {
@@ -59,13 +52,11 @@ public class PackageTypeController {
         }
     }
 
-    @PostMapping("/{id}")
+    @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PackageTypeDTO> updatePackageType(@PathVariable int id, @RequestBody PackageTypeDTO packageTypeDTO) {
         try {
-            System.out.println("Received DTO: " + packageTypeDTO);  // Add this
             PackageTypeDTO updatedPackage = packageService.updatePackage(id, packageTypeDTO);
-            System.out.println("Updated DTO: " + updatedPackage);  // Add this
             return new ResponseEntity<>(updatedPackage, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
