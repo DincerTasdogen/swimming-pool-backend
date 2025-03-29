@@ -1,10 +1,15 @@
 package com.sp.SwimmingPool.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-@Setter
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class MemberDTO {
     private int id;
     private String name;
@@ -12,11 +17,16 @@ public class MemberDTO {
     private String email;
     private String identityNumber;
     private String gender;
-    private double weight;
-    private double height;
+    private Double weight;
+    private Double height;
+    private LocalDate birthDate;
     private String phoneNumber;
     private String idPhotoFront;
     private String idPhotoBack;
     private String photo;
     private boolean canSwim;
+    private String swimmingLevel;
+    private LocalDateTime lastLessonDate;
+    private String swimmingNotes;
+    private Integer coachId;
 }

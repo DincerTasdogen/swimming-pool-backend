@@ -2,6 +2,7 @@ package com.sp.SwimmingPool.model.entity;
 
 import com.sp.SwimmingPool.model.enums.MemberGenderEnum;
 import com.sp.SwimmingPool.model.enums.StatusEnum;
+import com.sp.SwimmingPool.model.enums.SwimmingLevelEnum;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
@@ -72,6 +73,16 @@ public class Member {
     @Column(columnDefinition = "boolean default false")
     private boolean canSwim;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SwimmingLevelEnum swimmingLevel = SwimmingLevelEnum.NONE;
+
+    @Column
+    private LocalDateTime lastLessonDate;
+
+    @Column(length = 500)
+    private String swimmingNotes;
+
     private Integer coachId;
 
     @Enumerated(EnumType.STRING)
@@ -109,6 +120,9 @@ public class Member {
             String idPhotoBack,
             String photo,
             boolean canSwim,
+            SwimmingLevelEnum swimmingLevel,
+            LocalDateTime lastLessonDate,
+            String swimmingNotes,
             Integer coachId,
             StatusEnum status,
             boolean photoVerified,
@@ -130,6 +144,9 @@ public class Member {
         this.idPhotoBack = idPhotoBack;
         this.photo = photo;
         this.canSwim = canSwim;
+        this.swimmingLevel = swimmingLevel != null ? swimmingLevel : SwimmingLevelEnum.BEGINNER;
+        this.lastLessonDate = lastLessonDate;
+        this.swimmingNotes = swimmingNotes;
         this.coachId = coachId;
         this.status = status != null ? status : StatusEnum.PENDING_ID_CARD_VERIFICATION;
         this.photoVerified = photoVerified;
