@@ -184,4 +184,11 @@ public class MemberService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
+
+    public boolean hasSwimmingAbility(int memberId) throws Exception {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new Exception("Member not found"));
+
+        return member.isCanSwim() && member.getSwimmingLevel() != SwimmingLevelEnum.NONE;
+    }
 }

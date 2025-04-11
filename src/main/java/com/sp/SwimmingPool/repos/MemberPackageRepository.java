@@ -1,6 +1,7 @@
 package com.sp.SwimmingPool.repos;
 
 import com.sp.SwimmingPool.model.entity.MemberPackage;
+import com.sp.SwimmingPool.model.enums.MemberPackagePaymentStatusEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -14,4 +15,15 @@ public interface MemberPackageRepository extends JpaRepository<MemberPackage, In
     boolean existsByMemberIdAndActiveTrue(int memberId);
     boolean existsByMemberIdAndActiveTrueAndPoolIdIsNull(int memberId);
     boolean existsByMemberIdAndActiveTrueAndPoolId(int memberId, int poolId);
+
+    List<MemberPackage> findByMemberIdAndActive(int memberId, boolean active);
+    List<MemberPackage> findByMemberIdAndPaymentStatus(int memberId, MemberPackagePaymentStatusEnum paymentStatus);
+    List<MemberPackage> findByMemberIdAndActiveAndPaymentStatus(
+            int memberId,
+            boolean active,
+            MemberPackagePaymentStatusEnum paymentStatus);
+    List<MemberPackage> findByMemberIdAndPackageTypeIdAndActive(
+            int memberId,
+            int packageTypeId,
+            boolean active);
 }
