@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.springframework.http.RequestEntity.post;
+
 /**
  * REST Controller for reservation operations
  */
@@ -198,4 +200,5 @@ public class ReservationController {
 
         return response;
     }
+
 }
