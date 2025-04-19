@@ -29,4 +29,5 @@ public class MemberDTO {
     private LocalDateTime lastLessonDate;
     private String swimmingNotes;
     private Integer coachId;
+    private String status;
 }

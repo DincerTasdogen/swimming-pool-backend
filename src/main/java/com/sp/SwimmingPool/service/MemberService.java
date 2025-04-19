@@ -3,6 +3,7 @@ package com.sp.SwimmingPool.service;
 import com.sp.SwimmingPool.dto.MemberDTO;
 import com.sp.SwimmingPool.model.entity.Member;
 import com.sp.SwimmingPool.model.enums.MemberGenderEnum;
+import com.sp.SwimmingPool.model.enums.StatusEnum;
 import com.sp.SwimmingPool.model.enums.SwimmingLevelEnum;
 import com.sp.SwimmingPool.repos.MemberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,7 @@ public class MemberService {
         member.setIdPhotoBack(dto.getIdPhotoBack());
         member.setPhoto(dto.getPhoto());
         member.setCanSwim(dto.isCanSwim());
+        member.setStatus(StatusEnum.valueOf(dto.getStatus()));
 
         // Set swimming level if provided
         if (dto.getSwimmingLevel() != null && !dto.getSwimmingLevel().isEmpty()) {
@@ -82,6 +84,7 @@ public class MemberService {
         dto.setIdPhotoBack(member.getIdPhotoBack());
         dto.setPhoto(member.getPhoto());
         dto.setCanSwim(member.isCanSwim());
+        dto.setStatus(String.valueOf(member.getStatus()));
 
         // Convert swimming level enum to its display name
         if (member.getSwimmingLevel() != null) {
@@ -191,4 +194,29 @@ public class MemberService {
 
         return member.isCanSwim() && member.getSwimmingLevel() != SwimmingLevelEnum.NONE;
     }
+
+    public List<MemberDTO> getMembersByStatuses(List<StatusEnum> statuses) {
+        return memberRepository.findAll().stream()
+                .filter(member -> statuses.contains(member.getStatus()))
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public MemberDTO updateMemberStatus(int memberId, String statusStr) {
+        StatusEnum status = StatusEnum.valueOf(statusStr);
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Member not found with id: " + memberId));
+
+        member.setStatus(status);
+        member.setUpdatedAt(LocalDateTime.now());
+        memberRepository.save(member);
+
+        return convertToDTO(member);
+    }
+    public List<MemberDTO> getMembersByStatus(StatusEnum status) {
+        return memberRepository.findByStatus(status).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
 }

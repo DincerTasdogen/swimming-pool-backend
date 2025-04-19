@@ -1,6 +1,7 @@
 package com.sp.SwimmingPool.controller;
 
 import com.sp.SwimmingPool.dto.MemberDTO;
+import com.sp.SwimmingPool.model.enums.StatusEnum;
 import com.sp.SwimmingPool.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -125,4 +126,79 @@ public class MemberController {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteMember(@PathVariable int id) {
+        try {
+            memberService.deleteMember(id);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Belirli durumdaki başvuruları listele (örnek: bekleyenler)
+    @GetMapping("/members/pending")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<MemberDTO>> getPendingApplications() {
+        try {
+            List<MemberDTO> pendingMembers = memberService.getMembersByStatuses(List.of(
+                    StatusEnum.PENDING_ID_CARD_VERIFICATION,
+                    StatusEnum.PENDING_PHOTO_VERIFICATION,
+                    StatusEnum.PENDING_HEALTH_FORM,
+                    StatusEnum.PENDING_HEALTH_REPORT,
+                    StatusEnum.PENDING_DOCTOR_APPROVAL,
+                    StatusEnum.PENDING_EMAIL_VERIFICATION,
+                    StatusEnum.PENDING_REGISTRATION
+            ));
+
+            return pendingMembers.isEmpty() ?
+                    new ResponseEntity<>(HttpStatus.NO_CONTENT) :
+                    new ResponseEntity<>(pendingMembers, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Admin bir üyeyi belirli bir statüye güncelleyebilir
+    @PutMapping("/edit/{memberId}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<MemberDTO> updateMemberStatus(@PathVariable int memberId, @RequestBody Map<String, String> payload) {
+        try {
+            String status = payload.get("status");
+            if (status == null) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+            MemberDTO updatedMember = memberService.updateMemberStatus(memberId, status);
+            return new ResponseEntity<>(updatedMember, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    @GetMapping("/members/active")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<MemberDTO> getActiveMembers() {
+        return memberService.getMembersByStatus(StatusEnum.ACTIVE);
+    }
+    @GetMapping("/members/rejected")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<MemberDTO> getRejectedMembers() {
+        return memberService.getMembersByStatuses(List.of(
+                StatusEnum.REJECTED_ID_CARD,
+                StatusEnum.REJECTED_PHOTO,
+                StatusEnum.REJECTED_HEALTH_REPORT
+        ));
+    }
+    @GetMapping("/members/disabled")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<MemberDTO> getDisabledMembers() {
+        return memberService.getMembersByStatus(StatusEnum.DISABLED);
+    }
+
+
 }
