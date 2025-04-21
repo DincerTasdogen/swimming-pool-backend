@@ -15,7 +15,9 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -271,9 +273,12 @@ public class ReservationService {
     @Transactional
     public void processMissedReservations() {
         LocalDateTime now = LocalDateTime.now();
+        LocalDate currentDate = now.toLocalDate();
+        LocalTime currentTime = now.toLocalTime();
         List<ReservationStatusEnum> activeStatuses = Arrays.asList(ReservationStatusEnum.CONFIRMED);
 
-        List<Reservation> expiredReservations = reservationRepository.findExpiredReservations(activeStatuses, now);
+        List<Reservation> expiredReservations = reservationRepository.findExpiredReservations(
+                activeStatuses, currentDate, currentTime);
 
         for (Reservation reservation : expiredReservations) {
             try {

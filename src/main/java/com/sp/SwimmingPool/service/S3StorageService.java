@@ -6,26 +6,26 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.DeleteObjectRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.*;
+import com.sp.SwimmingPool.security.UserPrincipal;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class S3StorageService implements StorageService {
 
     private final AmazonS3 s3Client;
     private final Set<String> publicDirectories = new HashSet<>();
+    private final Set<String> memberPrivateDirectories = new HashSet<>();
 
     @Value("${aws.s3.bucket-name}")
     private String bucketName;
@@ -48,7 +48,12 @@ public class S3StorageService implements StorageService {
 
         // Define which directories should be public
         publicDirectories.add("pools");
-        // Add other public directories as needed
+        publicDirectories.add("public");
+
+        // Define which directories should be member-private (require role-based access control)
+        memberPrivateDirectories.add("members");
+        memberPrivateDirectories.add("registration/biometric");
+        memberPrivateDirectories.add("registration/id");
     }
 
     @Override
@@ -82,9 +87,22 @@ public class S3StorageService implements StorageService {
         return fileName;
     }
 
+    /**
+     * Store a file for a specific member
+     */
+    public String storeMemberFile(MultipartFile file, String photoType, int memberId) throws IOException {
+        String memberPath = "members/" + memberId + "/" + photoType;
+        return storeFile(file, memberPath);
+    }
+
     @Override
     public Resource loadFileAsResource(String fileName) throws IOException {
         try {
+            // Check if the current user has access to this file
+            if (!hasAccessToFile(fileName)) {
+                throw new IOException("Access denied to file: " + fileName);
+            }
+
             // Get S3 object
             byte[] content = s3Client.getObject(bucketName, fileName)
                     .getObjectContent()
@@ -92,19 +110,25 @@ public class S3StorageService implements StorageService {
 
             return new ByteArrayResource(content);
         } catch (Exception e) {
-            throw new IOException("File not found: " + fileName, e);
+            throw new IOException("File not found or access denied: " + fileName, e);
         }
     }
 
     @Override
     public void deleteFile(String fileName) throws IOException {
         try {
+            // Check if the current user has access to delete this file
+            if (!hasAccessToFile(fileName)) {
+                throw new IOException("Access denied to delete file: " + fileName);
+            }
+
             s3Client.deleteObject(new DeleteObjectRequest(bucketName, fileName));
         } catch (Exception e) {
             throw new IOException("Error deleting file: " + fileName, e);
         }
     }
 
+    @Override
     public String getFileUrl(String filePath) {
         // For public files, return the direct S3 URL
         if (isPublicFile(filePath)) {
@@ -127,5 +151,159 @@ public class S3StorageService implements StorageService {
             }
         }
         return false;
+    }
+
+    /**
+     * Checks if a file path is in a member-private directory
+     */
+    private boolean isMemberPrivateFile(String filePath) {
+        for (String dir : memberPrivateDirectories) {
+            if (filePath.startsWith(dir + "/")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Extract member ID from file path (if possible)
+     */
+    private Integer extractMemberId(String filePath) {
+        // For paths like "members/123/profile/abc.jpg"
+        if (filePath.startsWith("members/")) {
+            String[] parts = filePath.split("/");
+            if (parts.length >= 3) {
+                try {
+                    return Integer.parseInt(parts[1]);
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+            }
+        }
+
+        // For registration paths, we don't have member ID in the path
+        // We would need additional logic to map registration files to member IDs
+        // For now, we'll rely on the role-based security for these files
+
+        return null;
+    }
+
+    /**
+     * Check if the current user has access to the specified file
+     */
+    public boolean hasAccessToFile(String filePath) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+
+        // Public files are accessible to everyone
+        if (isPublicFile(filePath)) {
+            return true;
+        }
+
+        // Staff roles (Admin, Doctor, Coach) have access to all files
+        if (hasAnyRole(authentication, "ROLE_ADMIN", "ROLE_DOCTOR", "ROLE_COACH")) {
+            return true;
+        }
+
+        // For member files, members can only access their own files
+        if (isMemberPrivateFile(filePath) && authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_MEMBER"))) {
+            // If it's in the members directory, check the member ID
+            if (filePath.startsWith("members/")) {
+                Integer fileOwnerId = extractMemberId(filePath);
+                if (fileOwnerId != null) {
+                    // Get current member ID from authentication principal
+                    UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+                    Integer currentMemberId = userPrincipal.getId();
+
+                    // Members can only access their own files
+                    return fileOwnerId.equals(currentMemberId);
+                }
+            }
+
+            // For registration files, apply additional logic if needed
+            // (e.g., for mapping registration files to member IDs)
+
+            // By default, deny access to members for files we can't verify ownership
+            return false;
+        }
+
+        // For any other file or situation, deny access
+        return false;
+    }
+
+    /**
+     * Check if the authenticated user has any of the specified roles
+     */
+    private boolean hasAnyRole(Authentication authentication, String... roles) {
+        for (String role : roles) {
+            if (authentication.getAuthorities().contains(new SimpleGrantedAuthority(role))) {
+                return true;
+            }
+        }
+        return false;
+    }
+    /**
+     * Copy an object within the same S3 bucket
+     */
+    public boolean copyS3Object(String sourceKey, String destinationKey) {
+        try {
+            // Check if source object exists
+            if (!s3Client.doesObjectExist(bucketName, sourceKey)) {
+                System.err.println("Source object does not exist: " + sourceKey);
+                return false;
+            }
+
+            // Copy the object
+            CopyObjectRequest copyRequest = new CopyObjectRequest(bucketName, sourceKey, bucketName, destinationKey);
+            s3Client.copyObject(copyRequest);
+
+            // Verify the copy was successful
+            boolean success = s3Client.doesObjectExist(bucketName, destinationKey);
+
+            return success;
+        } catch (Exception e) {
+            System.err.println("Error copying object from " + sourceKey + " to " + destinationKey + ": " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Delete an object from S3
+     */
+    public boolean deleteS3Object(String key) {
+        try {
+            s3Client.deleteObject(bucketName, key);
+            return true;
+        } catch (Exception e) {
+            System.err.println("Error deleting object: " + key + ": " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * List all objects in an S3 directory
+     */
+    public List<String> listS3Objects(String prefix) {
+        List<String> objects = new ArrayList<>();
+
+        ListObjectsV2Request req = new ListObjectsV2Request()
+                .withBucketName(bucketName)
+                .withPrefix(prefix);
+
+        ListObjectsV2Result result;
+        do {
+            result = s3Client.listObjectsV2(req);
+
+            for (S3ObjectSummary objectSummary : result.getObjectSummaries()) {
+                objects.add(objectSummary.getKey());
+            }
+
+            req.setContinuationToken(result.getNextContinuationToken());
+        } while (result.isTruncated());
+
+        return objects;
     }
 }

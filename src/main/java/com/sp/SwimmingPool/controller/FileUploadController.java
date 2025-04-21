@@ -51,6 +51,10 @@ public class FileUploadController {
                     HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
             String filePath = requestPath.substring("/api/upload/files/".length());
 
+            if (!storageService.hasAccessToFile(filePath)) {
+                return ResponseEntity.status(403).build(); // Forbidden
+            }
+
             // Load file as Resource
             Resource resource = storageService.loadFileAsResource(filePath);
 

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light dark">
     <meta name="supported-color-schemes" content="light dark">
-    <title>Swimming Pool - Doğrulama Kodu</title>
+    <title>Swimming Pool - {{SUBJECT}}</title> <!-- Placeholder for Subject -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
@@ -171,23 +171,25 @@
         </div>
     </div>
     <div class="content">
-        <h1>Şifrenizi mi unuttunuz?</h1>
-        <p>Merak etmeyin, bu çok kolay çözülebilir! Güvenliğiniz için şifre sıfırlama işleminizi hızlıca tamamlayabilirsiniz.</p>
+        <h1>{{TITLE}}</h1> <!-- Placeholder -->
+        <p>{{MAIN_MESSAGE}}</p> <!-- Placeholder -->
 
+        <!-- VERIFICATION_BLOCK_START -->
         <div class="verification-container">
-            <div class="verification-code">789432</div>
+            <div class="verification-code">{{VERIFICATION_CODE}}</div> <!-- Placeholder -->
         </div>
+        <!-- VERIFICATION_BLOCK_END -->
 
-        <p class="help-text">
-            <span class="highlight">15 dakika</span> içinde geçerli olan bu kodu kullanarak şifrenizi sıfırlayabilirsiniz.
-            Eğer bu talebi siz yapmadıysanız lütfen hesabınızı kontrol edin.
-        </p>
+        <p class="help-text">{{HELP_TEXT}}</p> <!-- Placeholder -->
 
+        <!-- SUCCESS_ICON_BLOCK_START -->
         <!--
         <div class="success-icon">
             <img src="https://cdn-icons-png.flaticon.com/512/7518/7518748.png" alt="Success" />
         </div>
         -->
+        <!-- SUCCESS_ICON_BLOCK_END -->
+
     </div>
     <div class="footer">
         &copy; 2025 Swimming Pool · Tüm Hakkı Saklıdır

@@ -7,7 +7,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,10 +27,11 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
 
     @Query("SELECT r FROM Reservation r JOIN Session s ON r.sessionId = s.id " +
             "WHERE r.status IN :activeStatuses AND " +
-            "CONCAT(s.sessionDate, ' ', s.endTime) < :currentDateTime")
+            "s.sessionDate < :currentDate OR (s.sessionDate = :currentDate AND s.endTime < :currentTime)")
     List<Reservation> findExpiredReservations(
             @Param("activeStatuses") List<ReservationStatusEnum> activeStatuses,
-            @Param("currentDateTime") LocalDateTime currentDateTime);
+            @Param("currentDate") LocalDate currentDate,
+            @Param("currentTime") LocalTime currentTime);
 
     @Query("SELECT r FROM Reservation r JOIN Session s ON r.sessionId = s.id " +
             "WHERE r.memberId = :memberId AND s.sessionDate = :sessionDate AND r.status IN :activeStatuses")

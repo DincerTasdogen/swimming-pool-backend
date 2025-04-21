@@ -41,6 +41,12 @@ public class User {
     @Column(columnDefinition = "int default 0")
     private int memberCount;
 
+    @Column
+    private String passwordResetToken;
+
+    @Column
+    private LocalDateTime tokenExpiryDate;
+
     @Column(columnDefinition = "timestamp default CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
 
