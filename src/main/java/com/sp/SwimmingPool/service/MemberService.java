@@ -219,4 +219,35 @@ public class MemberService {
                 .collect(Collectors.toList());
     }
 
+    // Sağlık formunu incele ve sağlık raporu gerekliyse statüyü değiştir
+    public MemberDTO reviewHealthForm(int memberId, boolean requiresMedicalReport) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+
+        if (requiresMedicalReport) {
+            member.setStatus(StatusEnum.PENDING_HEALTH_REPORT);
+        } else {
+            member.setStatus(StatusEnum.ACTIVE); // direkt onay aşamasına geçer
+        }
+
+        memberRepository.save(member);
+        return convertToDTO(member);
+    }
+
+    // Sağlık raporunu incele ve onay ver / reddet
+    public MemberDTO reviewMedicalReport(int memberId, boolean isEligibleForPool) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+
+        if (isEligibleForPool) {
+            member.setStatus(StatusEnum.ACTIVE);
+        } else {
+            member.setStatus(StatusEnum.REJECTED_HEALTH_REPORT);
+        }
+
+        memberRepository.save(member);
+        return convertToDTO(member);
+    }
+
+
 }

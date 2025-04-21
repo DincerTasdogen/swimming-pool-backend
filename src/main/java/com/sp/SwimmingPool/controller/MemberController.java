@@ -199,6 +199,21 @@ public class MemberController {
     public List<MemberDTO> getDisabledMembers() {
         return memberService.getMembersByStatus(StatusEnum.DISABLED);
     }
+    @PutMapping("/doctor/review-health-form/{memberId}")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<MemberDTO> reviewHealthForm(
+            @PathVariable int memberId,
+            @RequestParam boolean requiresMedicalReport) {
+        return ResponseEntity.ok(memberService.reviewHealthForm(memberId, requiresMedicalReport));
+    }
+
+    @PutMapping("/doctor/review-medical-report/{memberId}")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<MemberDTO> reviewMedicalReport(
+            @PathVariable int memberId,
+            @RequestParam boolean isEligibleForPool) {
+        return ResponseEntity.ok(memberService.reviewMedicalReport(memberId, isEligibleForPool));
+    }
 
 
 }
