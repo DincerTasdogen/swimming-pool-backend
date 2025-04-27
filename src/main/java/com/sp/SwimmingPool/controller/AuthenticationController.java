@@ -4,7 +4,9 @@ import com.sp.SwimmingPool.dto.AuthResponse;
 import com.sp.SwimmingPool.dto.LoginRequest;
 import com.sp.SwimmingPool.dto.RegisterRequest;
 import com.sp.SwimmingPool.model.entity.Member;
+import com.sp.SwimmingPool.model.entity.User;
 import com.sp.SwimmingPool.repos.MemberRepository;
+import com.sp.SwimmingPool.repos.UserRepository;
 import com.sp.SwimmingPool.security.JwtTokenProvider;
 import com.sp.SwimmingPool.security.UserPrincipal;
 import com.sp.SwimmingPool.service.*;
@@ -19,6 +21,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -38,6 +41,7 @@ public class AuthenticationController {
     private final EmailService emailService;
     private final MemberRepository memberRepository;
     private final MemberService memberService;
+    private final UserRepository userRepository;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(
@@ -59,15 +63,33 @@ public class AuthenticationController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        AuthResponse response = AuthResponse.builder()
+        AuthResponse.AuthResponseBuilder responseBuilder = AuthResponse.builder()
                 .id(userPrincipal.getId())
                 .email(userPrincipal.getEmail())
                 .role(userPrincipal.getRole())
-                .userType(userPrincipal.getUserType())
-                .name(userPrincipal.getName())
-                .build();
+                .userType(userPrincipal.getUserType());
 
-        return ResponseEntity.ok(response);
+        // Fetch full details based on userType to get status and surname
+        if ("MEMBER".equals(userPrincipal.getUserType())) {
+            Member member = memberRepository.findById(userPrincipal.getId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Member details not found for authenticated user"));
+            responseBuilder
+                    .name(member.getName())
+                    .surname(member.getSurname())
+                    .status(member.getStatus());
+        } else if ("STAFF".equals(userPrincipal.getUserType())) {
+            User user = userRepository.findById(userPrincipal.getId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User details not found for authenticated user"));
+            responseBuilder
+                    .name(user.getName())
+                    .surname(user.getSurname())
+                    .status(null);
+        } else {
+            // Should not happen if UserPrincipal is created correctly
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null); // Or handle appropriately
+        }
+
+        return ResponseEntity.ok(responseBuilder.build());
     }
 
     @PostMapping("/register/oauth")

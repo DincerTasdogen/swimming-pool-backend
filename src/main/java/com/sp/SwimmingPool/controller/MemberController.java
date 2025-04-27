@@ -148,11 +148,9 @@ public class MemberController {
             List<MemberDTO> pendingMembers = memberService.getMembersByStatuses(List.of(
                     StatusEnum.PENDING_ID_CARD_VERIFICATION,
                     StatusEnum.PENDING_PHOTO_VERIFICATION,
-                    StatusEnum.PENDING_HEALTH_FORM,
                     StatusEnum.PENDING_HEALTH_REPORT,
-                    StatusEnum.PENDING_DOCTOR_APPROVAL,
-                    StatusEnum.PENDING_EMAIL_VERIFICATION,
-                    StatusEnum.PENDING_REGISTRATION
+                    StatusEnum.PENDING_HEALTH_FORM_APPROVAL,
+                    StatusEnum.PENDING_DOCTOR_APPROVAL
             ));
 
             return pendingMembers.isEmpty() ?
@@ -194,11 +192,28 @@ public class MemberController {
                 StatusEnum.REJECTED_HEALTH_REPORT
         ));
     }
+
+
     @GetMapping("/members/disabled")
     @PreAuthorize("hasRole('ADMIN')")
     public List<MemberDTO> getDisabledMembers() {
         return memberService.getMembersByStatus(StatusEnum.DISABLED);
     }
+
+
+    @GetMapping("/{status}/count")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public int getCountByStatus(@PathVariable StatusEnum status) {
+        return memberService.countMembersByStatus(status);
+    }
+
+    @GetMapping("/status/{status}")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public List<MemberDTO> getMembersByStatus(@PathVariable StatusEnum status) {
+        return memberService.getMembersByStatus(status);
+    }
+
+
     @PutMapping("/doctor/review-health-form/{memberId}")
     @PreAuthorize("hasRole('DOCTOR')")
     public ResponseEntity<MemberDTO> reviewHealthForm(

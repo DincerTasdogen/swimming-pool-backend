@@ -4,6 +4,7 @@ import com.sp.SwimmingPool.dto.MemberDTO;
 import com.sp.SwimmingPool.security.UserPrincipal;
 import com.sp.SwimmingPool.service.MemberService;
 import com.sp.SwimmingPool.service.S3StorageService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -14,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.HandlerMapping;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -78,7 +80,6 @@ public class MemberPhotoController {
             @RequestParam(value = "back", required = false) MultipartFile backFile) {
 
         try {
-            // Verify member exists
             MemberDTO memberDTO = memberService.getMemberDetails(memberId);
 
             Map<String, String> response = new HashMap<>();
@@ -101,7 +102,6 @@ public class MemberPhotoController {
                 response.put("backUrl", storageService.getFileUrl(backPath));
             }
 
-            // Update member record with new photo paths
             memberService.updateMember(memberId, memberDTO);
 
             return ResponseEntity.ok(response);
@@ -149,13 +149,26 @@ public class MemberPhotoController {
      * - Profile, ID photos: Accessible by the member and staff roles (Admin, Doctor, Coach)
      * - Medical photos: Only accessible by Admin and Doctor roles
      */
-    @GetMapping("/{memberId}/{photoType}")
+    @GetMapping("/{memberId}/{photoType}/**")
     public ResponseEntity<Resource> getMemberPhoto(
             @PathVariable int memberId,
             @PathVariable String photoType,
+            HttpServletRequest request,
             Authentication authentication) {
 
         try {
+            // Extract the full path from request to handle any additional parts
+            String requestPath = (String) request.getAttribute(
+                    HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+
+            // Parse path to get all parts after photoType
+            String fullPath = requestPath.substring(requestPath.indexOf(photoType) + photoType.length());
+
+            // Remove any leading slash
+            if (fullPath.startsWith("/")) {
+                fullPath = fullPath.substring(1);
+            }
+
             // Check role-based permissions for medical photos
             if ("medical".equals(photoType)) {
                 if (!hasAnyRole(authentication, "ROLE_ADMIN", "ROLE_DOCTOR")) {
@@ -168,8 +181,17 @@ public class MemberPhotoController {
                 }
             }
 
-            // Determine the full file path based on photo type
-            String filePath = determineMemberPhotoPath(memberId, photoType);
+            // Determine the full file path based on photo type and any additional parts
+            String filePath;
+            if (fullPath.isEmpty()) {
+                filePath = determineMemberPhotoPath(memberId, photoType);
+            } else {
+                // If there are additional parts (like an extension), include them
+                filePath = determineMemberPhotoPath(memberId, photoType) + "/" + fullPath;
+            }
+
+            // Log what we're looking for
+            System.out.println("Attempting to load file: " + filePath);
 
             // Load file as Resource
             Resource resource = storageService.loadFileAsResource(filePath);
@@ -182,6 +204,7 @@ public class MemberPhotoController {
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
                     .body(resource);
         } catch (IOException e) {
+            System.err.println("Error loading photo: " + e.getMessage());
             return ResponseEntity.notFound().build();
         }
     }

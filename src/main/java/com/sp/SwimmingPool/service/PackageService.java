@@ -4,10 +4,12 @@ import com.sp.SwimmingPool.dto.MemberPackageDTO;
 import com.sp.SwimmingPool.dto.PackageTypeDTO;
 import com.sp.SwimmingPool.model.entity.MemberPackage;
 import com.sp.SwimmingPool.model.entity.PackageType;
+import com.sp.SwimmingPool.model.entity.Member;
+import com.sp.SwimmingPool.model.enums.StatusEnum;
 import com.sp.SwimmingPool.repos.MemberPackageRepository;
 import com.sp.SwimmingPool.repos.PackageTypeRepository;
+import com.sp.SwimmingPool.repos.MemberRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -20,8 +22,9 @@ import java.util.stream.Collectors;
 public class PackageService {
 
     private final PackageTypeRepository packageTypeRepository;
-
     private final MemberPackageRepository memberPackageRepository;
+    private final MemberRepository memberRepository;
+    private final MemberService memberService;
 
     public List<PackageTypeDTO> listPackageTypes() {
         return packageTypeRepository.findAll()
@@ -74,11 +77,41 @@ public class PackageService {
 
 
     public MemberPackageDTO createMemberPackage(MemberPackageDTO memberPackageDTO) {
+        // 1. Check if member status is ACTIVE
+        Member member = memberRepository.findById(memberPackageDTO.getMemberId())
+                .orElseThrow(() -> new IllegalArgumentException("Member not found with id: " + memberPackageDTO.getMemberId()));
+
+        if (member.getStatus() != StatusEnum.ACTIVE) {
+            throw new InvalidOperationException("Member status must be ACTIVE to purchase a package. Current status: " + member.getStatus());
+        }
+
+        // 2. Get package type to validate requirements
+        PackageType packageType = packageTypeRepository.findById(memberPackageDTO.getPackageTypeId())
+                .orElseThrow(() -> new IllegalArgumentException("Package type not found with id: " + memberPackageDTO.getPackageTypeId()));
+
+        // 3. Check swimming ability requirement
+        if (packageType.isRequiresSwimmingAbility()) {
+            try {
+                boolean canSwim = memberService.hasSwimmingAbility(memberPackageDTO.getMemberId());
+                if (!canSwim) {
+                    throw new InvalidOperationException("This package requires swimming ability which the member does not have");
+                }
+            } catch (Exception e) {
+                throw new InvalidOperationException("Error checking member swimming ability: " + e.getMessage());
+            }
+        }
+
+        // 4. Check if member can buy this package
         if (!canBuyPackage(memberPackageDTO.getMemberId(), memberPackageDTO.getPoolId())) {
             throw new InvalidOperationException("Member cannot buy this package due to existing active package restrictions");
         }
 
+        // 5. Create and save the member package
         MemberPackage memberPackage = MemberPackageDTO.convertToMemberPackage(memberPackageDTO);
+
+        // Set sessions remaining based on the package type
+        memberPackage.setSessionsRemaining(packageType.getSessionLimit());
+
         memberPackage = memberPackageRepository.save(memberPackage);
         return MemberPackageDTO.createFromMemberPackage(memberPackage);
     }
@@ -105,7 +138,7 @@ public class PackageService {
     }
 
     public boolean canBuyPackage(int memberId, Integer newPoolId) {
-        if(memberPackageRepository.existsByMemberIdAndActiveTrueAndPoolIdIsNull(memberId)) {
+        if (memberPackageRepository.existsByMemberIdAndActiveTrueAndPoolIdIsNull(memberId)) {
             return false;
         }
 
@@ -119,7 +152,6 @@ public class PackageService {
     public boolean hasActiveMemberPackages(int memberId) {
         return memberPackageRepository.existsByMemberIdAndActiveTrue(memberId);
     }
-
 }
 
 @ResponseStatus(HttpStatus.BAD_REQUEST)

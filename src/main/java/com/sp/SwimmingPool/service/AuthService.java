@@ -56,6 +56,7 @@ public class AuthService {
                     .email(loginRequest.getEmail())
                     .name(user != null ? user.getName() : member.getName())
                     .id(user != null ? user.getId() : member.getId())
+                    .status(user != null ? null : member.getStatus())
                     .build();
         } catch (BadCredentialsException e) {
             throw new InvalidCredentialsException();
@@ -76,6 +77,7 @@ public class AuthService {
                 .email(email)
                 .id(user != null ? user.getId() : member.getId())
                 .name(user != null ? user.getName() : member.getName())
+                .status(user != null ? null : member.getStatus())
                 .build();
     }
 

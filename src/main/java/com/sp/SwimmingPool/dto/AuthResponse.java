@@ -1,5 +1,6 @@
 package com.sp.SwimmingPool.dto;
 
+import com.sp.SwimmingPool.model.enums.StatusEnum;
 import lombok.Builder;
 import lombok.Data;
 
@@ -11,4 +12,6 @@ public class AuthResponse {
     private String role;
     private String email;
     private String name;
+    private String surname;
+    private StatusEnum status;
 }

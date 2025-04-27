@@ -219,6 +219,10 @@ public class MemberService {
                 .collect(Collectors.toList());
     }
 
+    public int countMembersByStatus(StatusEnum status) {
+        return memberRepository.countMembersByStatus(status);
+    }
+
     // Sağlık formunu incele ve sağlık raporu gerekliyse statüyü değiştir
     public MemberDTO reviewHealthForm(int memberId, boolean requiresMedicalReport) {
         Member member = memberRepository.findById(memberId)

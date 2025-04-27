@@ -14,5 +14,5 @@ public interface MemberRepository extends JpaRepository<Member, Integer> {
     Optional<Member> findByIdentityNumber(String identityNumber);
     List<Member> findByCoachId(Integer coachId);
     List<Member> findByStatus(StatusEnum status);
-
+    int countMembersByStatus(StatusEnum status);
 }
