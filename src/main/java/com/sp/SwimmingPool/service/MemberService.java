@@ -1,12 +1,15 @@
 package com.sp.SwimmingPool.service;
 
+import com.sp.SwimmingPool.dto.HealthAnswerDTO;
 import com.sp.SwimmingPool.dto.MemberDTO;
 import com.sp.SwimmingPool.model.entity.Member;
+import com.sp.SwimmingPool.model.entity.MemberHealthAssessment;
 import com.sp.SwimmingPool.model.enums.MemberGenderEnum;
 import com.sp.SwimmingPool.model.enums.StatusEnum;
 import com.sp.SwimmingPool.model.enums.SwimmingLevelEnum;
+import com.sp.SwimmingPool.repos.MemberHealthAssessmentRepository;
 import com.sp.SwimmingPool.repos.MemberRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -14,17 +17,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+
 @Service
+@RequiredArgsConstructor
 public class MemberService {
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final MemberHealthAssessmentRepository assessmentRepository;
 
-    @Autowired
-    public MemberService(MemberRepository memberRepository, PasswordEncoder passwordEncoder) {
-        this.memberRepository = memberRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
 
     private Member convertToEntity(MemberDTO dto) {
         Member member = new Member();
@@ -67,6 +68,8 @@ public class MemberService {
         member.setLastLessonDate(dto.getLastLessonDate());
         member.setSwimmingNotes(dto.getSwimmingNotes());
         member.setCoachId(dto.getCoachId());
+        member.setUpdatedAt(dto.getUpdatedDate());
+        member.setRegistrationDate(dto.getRegistrationDate());
     }
 
     private MemberDTO convertToDTO(Member member) {
@@ -94,15 +97,12 @@ public class MemberService {
         dto.setLastLessonDate(member.getLastLessonDate());
         dto.setSwimmingNotes(member.getSwimmingNotes());
         dto.setCoachId(member.getCoachId());
+        dto.setRegistrationDate(member.getRegistrationDate());
+        dto.setUpdatedDate(member.getUpdatedAt());
 
         return dto;
     }
 
-    public MemberDTO createMember(MemberDTO memberDTO) {
-        Member member = convertToEntity(memberDTO);
-        memberRepository.save(member);
-        return convertToDTO(member);
-    }
 
     public MemberDTO updateMember(int id, MemberDTO memberDTO) {
         Member member = memberRepository.findById(id)
@@ -123,6 +123,11 @@ public class MemberService {
         member.setPassword(encodedPassword);
         member.setUpdatedAt(LocalDateTime.now());
         memberRepository.save(member);
+    }
+
+    public MemberDTO findByEmail(String email) {
+        Member member = memberRepository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException("Member not found with email: " + email));
+        return convertToDTO(member);
     }
 
     private SwimmingLevelEnum getSwimmingLevelFromString(String level) {
@@ -253,5 +258,17 @@ public class MemberService {
         return convertToDTO(member);
     }
 
+    public List<HealthAnswerDTO> getHealthAnswersForMember(int memberId) {
+        MemberHealthAssessment assessment = assessmentRepository
+                .findTopByMemberIdOrderByCreatedAtDesc(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Health assessment not found for member: " + memberId));
+        return assessment.getAnswers().stream()
+                .map(ans -> new HealthAnswerDTO(
+                        ans.getQuestion().getQuestionText(),
+                        ans.isAnswer(),
+                        ans.getAdditionalNotes()
+                ))
+                .collect(Collectors.toList());
+    }
 
 }

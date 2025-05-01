@@ -45,9 +45,16 @@ public class OAuthRegisterRequest {
     @Max(value = 200, message = "Weight must be at most 200 kg")
     private Double weight;
 
+    private String doctorToldCondition;
+    private String chestPain;
+    private String dizziness;
+
     @NotBlank(message = "Gender is required")
     @Pattern(regexp = "MALE|FEMALE|OTHER", message = "Gender must be MALE, FEMALE or OTHER")
     private String gender;
 
     private boolean canSwim;
+    private String photo;
+    private String idPhotoFront;
+    private String idPhotoBack;
 }

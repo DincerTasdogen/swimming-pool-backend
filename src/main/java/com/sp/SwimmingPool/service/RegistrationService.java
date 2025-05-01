@@ -1,18 +1,18 @@
 package com.sp.SwimmingPool.service;
 
+import com.sp.SwimmingPool.dto.AnswerRequest;
 import com.sp.SwimmingPool.dto.RegisterRequest;
 import com.sp.SwimmingPool.model.entity.Member;
 import com.sp.SwimmingPool.model.enums.MemberGenderEnum;
 import com.sp.SwimmingPool.model.enums.StatusEnum;
+import com.sp.SwimmingPool.model.enums.SwimmingLevelEnum;
 import com.sp.SwimmingPool.repos.MemberRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -22,6 +22,7 @@ public class RegistrationService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final VerificationService verificationService;
+    private final HealthAssessmentService healthAssessmentService;
 
     public boolean isEmailRegistered(String email) {
         return memberRepository.findByEmail(email).isPresent();
@@ -33,15 +34,12 @@ public class RegistrationService {
 
     public void storeOAuthTempData(Map<String, Object> oauthData) {
         String email = (String) oauthData.get("email");
-        // Store OAuth data in the verification service for later use
         verificationService.storeTempUserData(email, oauthData);
     }
 
     public Member register(RegisterRequest request) {
-        // Get the user's temporary data including uploaded file paths
         Map<String, Object> userData = verificationService.getTempUserData(request.getEmail());
 
-        // Extract file paths from temp data if available
         String photo = userData != null && userData.containsKey("photo") ?
                 (String) userData.get("photo") : request.getPhoto();
 
@@ -51,7 +49,8 @@ public class RegistrationService {
         String idPhotoBack = userData != null && userData.containsKey("idPhotoBack") ?
                 (String) userData.get("idPhotoBack") : request.getIdPhotoBack();
 
-        // Create member entity
+        SwimmingLevelEnum level = request.isCanSwim() ? SwimmingLevelEnum.BEGINNER : SwimmingLevelEnum.NONE;
+
         Member member = Member.builder()
                 .name(request.getName())
                 .surname(request.getSurname())
@@ -65,6 +64,7 @@ public class RegistrationService {
                 .gender(MemberGenderEnum.valueOf(request.getGender()))
                 .canSwim(request.isCanSwim())
                 .status(StatusEnum.PENDING_ID_CARD_VERIFICATION)
+                .swimmingLevel(level)
                 .photo(photo)
                 .idPhotoFront(idPhotoFront)
                 .idPhotoBack(idPhotoBack)
@@ -73,6 +73,14 @@ public class RegistrationService {
                 .build();
 
         memberRepository.save(member);
+
+        if (userData != null && userData.containsKey("healthAnswers")) {
+            List<AnswerRequest> healthAnswers = (List<AnswerRequest>) userData.get("healthAnswers");
+            if (healthAnswers != null) {
+                healthAssessmentService.createHealthAssessmentForMember(member.getId(), healthAnswers);
+            }
+        }
+
         return member;
     }
 }

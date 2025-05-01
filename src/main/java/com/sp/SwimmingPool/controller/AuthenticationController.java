@@ -107,7 +107,6 @@ public class AuthenticationController {
                 return ResponseEntity.badRequest().body("Missing required OAuth data");
             }
 
-            // Check if email exists
             if (registrationService.isEmailRegistered(email)) {
                 return ResponseEntity.badRequest().body("Email already registered");
             }
@@ -117,11 +116,9 @@ public class AuthenticationController {
                 return ResponseEntity.badRequest().body("Identity number already registered");
             }
 
-            // Determine if this is initial data collection or final registration
             boolean isComplete = isOAuthRegistrationComplete(oauthData);
 
             if (!isComplete) {
-                // Store the partial data for later completion
                 registrationService.storeOAuthTempData(oauthData);
                 return ResponseEntity.ok().build();
             } else {
@@ -159,9 +156,7 @@ public class AuthenticationController {
         }
     }
 
-    // Helper method to check if the OAuth registration data is complete
     private boolean isOAuthRegistrationComplete(Map<String, Object> oauthData) {
-        // Check if we have all required fields to complete registration
         return oauthData.containsKey("phoneNumber") &&
                 oauthData.containsKey("identityNumber") &&
                 oauthData.containsKey("birthDate") &&
@@ -170,7 +165,6 @@ public class AuthenticationController {
                 oauthData.containsKey("gender");
     }
 
-    // Helper method to create RegisterRequest from OAuth data
     private RegisterRequest createRegisterRequestFromOAuthData(Map<String, Object> oauthData) {
         return RegisterRequest.builder()
                 .email((String) oauthData.get("email"))
@@ -183,7 +177,11 @@ public class AuthenticationController {
                 .weight(Double.parseDouble(oauthData.get("weight").toString()))
                 .gender((String) oauthData.get("gender"))
                 .canSwim(Boolean.parseBoolean(oauthData.get("canSwim").toString()))
-                // Generate a random password for OAuth users
+                // Document paths
+                .photo((String) oauthData.get("photo"))
+                .idPhotoFront((String) oauthData.get("idPhotoFront"))
+                .idPhotoBack((String) oauthData.get("idPhotoBack"))
+                // Generate a secure random password
                 .password(UUID.randomUUID().toString())
                 .build();
     }

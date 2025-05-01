@@ -60,6 +60,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/oauth2/**").permitAll()
                         .requestMatchers("/api/verification/**").permitAll()
                         .requestMatchers("/api/packages/**").hasRole("ADMIN")
+                        .requestMatchers("/api/health-questions").permitAll()
+                        .requestMatchers("/api/registration/health-assessment").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2

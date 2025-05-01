@@ -136,7 +136,7 @@ public class S3StorageService implements StorageService {
         }
 
         // For private files, return a path that will go through our controller
-        return "/api/upload/files/" + filePath;
+        return filePath;
     }
 
     private boolean isPublicDirectory(String directory) {

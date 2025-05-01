@@ -1,10 +1,10 @@
 package com.sp.SwimmingPool.controller;
 
+import com.sp.SwimmingPool.dto.HealthAnswerDTO;
 import com.sp.SwimmingPool.dto.MemberDTO;
 import com.sp.SwimmingPool.model.enums.StatusEnum;
 import com.sp.SwimmingPool.service.MemberService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,112 +18,80 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class MemberController {
 
-    private MemberService memberService;
-
-    @Autowired
-    public MemberController(MemberService memberService) {
-        this.memberService = memberService;
-    }
+    private final MemberService memberService;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<MemberDTO>> getMemberList() {
-        try {
-            List<MemberDTO> members = memberService.listAllMembers();
-            if (members.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(members, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        List<MemberDTO> members = memberService.listAllMembers();
+        return members.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(members);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('COACH')")
     public ResponseEntity<MemberDTO> getMember(@PathVariable int id) {
         try {
-            MemberDTO member = memberService.getMemberDetails(id);
-            if (member == null) {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-            return new ResponseEntity(member, HttpStatus.OK);
+            return ResponseEntity.ok(memberService.getMemberDetails(id));
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.notFound().build();
         }
     }
 
     @GetMapping("/coach/{coachId}")
     @PreAuthorize("hasRole('COACH')")
     public ResponseEntity<List<MemberDTO>> getMembersOfCoach(@PathVariable int coachId) {
-        try {
-            List<MemberDTO> members = memberService.listMembersOfCoach(coachId);
-            if (members.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(members, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        List<MemberDTO> members = memberService.listMembersOfCoach(coachId);
+        return members.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(members);
     }
 
-    @PutMapping("/edit/{memberId}")
+    @PutMapping("/{memberId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MemberDTO> editMember(@PathVariable int memberId, @RequestBody MemberDTO memberDTO) {
         try {
-            MemberDTO member = memberService.updateMember(memberId, memberDTO);
-            return new ResponseEntity<>(member, HttpStatus.OK);
+            return ResponseEntity.ok(memberService.updateMember(memberId, memberDTO));
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @PutMapping("/edit/{memberId}/swim-status")
+    @PutMapping("/{memberId}/swim-status")
     @PreAuthorize("hasRole('COACH')")
     public ResponseEntity<MemberDTO> editMemberSwimStatus(@PathVariable int memberId, @RequestBody MemberDTO memberDTO) {
         try {
             MemberDTO member = memberService.getMemberDetails(memberId);
             member.setCanSwim(memberDTO.isCanSwim());
-            MemberDTO updatedMember = memberService.updateMember(memberId, member);
-            return new ResponseEntity<>(updatedMember, HttpStatus.OK);
+            return ResponseEntity.ok(memberService.updateMember(memberId, member));
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @PutMapping("/edit/{memberId}/swimming-level")
+    @PutMapping("/{memberId}/swimming-level")
     @PreAuthorize("hasRole('COACH')")
     public ResponseEntity<MemberDTO> updateSwimmingLevel(@PathVariable int memberId, @RequestBody Map<String, String> payload) {
+        String level = payload.get("level");
+        if (level == null || level.isEmpty()) return ResponseEntity.badRequest().build();
         try {
-            String level = payload.get("level");
-            if (level == null || level.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-            }
-
-            MemberDTO updatedMember = memberService.updateSwimmingLevel(memberId, level);
-            return new ResponseEntity<>(updatedMember, HttpStatus.OK);
+            return ResponseEntity.ok(memberService.updateSwimmingLevel(memberId, level));
         } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @PutMapping("/edit/{memberId}/swimming-notes")
+    // 7. Edit swimming notes (coach)
+    @PutMapping("/{memberId}/swimming-notes")
     @PreAuthorize("hasRole('COACH')")
     public ResponseEntity<MemberDTO> updateSwimmingNotes(@PathVariable int memberId, @RequestBody Map<String, String> payload) {
+        String notes = payload.get("notes");
+        if (notes == null) return ResponseEntity.badRequest().build();
         try {
-            String notes = payload.get("notes");
-            if (notes == null) {
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-            }
-
             MemberDTO member = memberService.getMemberDetails(memberId);
             member.setSwimmingNotes(notes);
-            MemberDTO updatedMember = memberService.updateMember(memberId, member);
-            return new ResponseEntity<>(updatedMember, HttpStatus.OK);
+            return ResponseEntity.ok(memberService.updateMember(memberId, member));
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -132,89 +100,47 @@ public class MemberController {
     public ResponseEntity<Void> deleteMember(@PathVariable int id) {
         try {
             memberService.deleteMember(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-    }
-
-    // Belirli durumdaki başvuruları listele (örnek: bekleyenler)
-    @GetMapping("/members/pending")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<MemberDTO>> getPendingApplications() {
-        try {
-            List<MemberDTO> pendingMembers = memberService.getMembersByStatuses(List.of(
-                    StatusEnum.PENDING_ID_CARD_VERIFICATION,
-                    StatusEnum.PENDING_PHOTO_VERIFICATION,
-                    StatusEnum.PENDING_HEALTH_REPORT,
-                    StatusEnum.PENDING_HEALTH_FORM_APPROVAL,
-                    StatusEnum.PENDING_DOCTOR_APPROVAL
-            ));
-
-            return pendingMembers.isEmpty() ?
-                    new ResponseEntity<>(HttpStatus.NO_CONTENT) :
-                    new ResponseEntity<>(pendingMembers, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // Admin bir üyeyi belirli bir statüye güncelleyebilir
-    @PutMapping("/edit/{memberId}/status")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<MemberDTO> updateMemberStatus(@PathVariable int memberId, @RequestBody Map<String, String> payload) {
-        try {
-            String status = payload.get("status");
-            if (status == null) {
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-            }
-            MemberDTO updatedMember = memberService.updateMemberStatus(memberId, status);
-            return new ResponseEntity<>(updatedMember, HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-    @GetMapping("/members/active")
-    @PreAuthorize("hasRole('ADMIN')")
-    public List<MemberDTO> getActiveMembers() {
-        return memberService.getMembersByStatus(StatusEnum.ACTIVE);
-    }
-    @GetMapping("/members/rejected")
-    @PreAuthorize("hasRole('ADMIN')")
-    public List<MemberDTO> getRejectedMembers() {
-        return memberService.getMembersByStatuses(List.of(
-                StatusEnum.REJECTED_ID_CARD,
-                StatusEnum.REJECTED_PHOTO,
-                StatusEnum.REJECTED_HEALTH_REPORT
-        ));
-    }
-
-
-    @GetMapping("/members/disabled")
-    @PreAuthorize("hasRole('ADMIN')")
-    public List<MemberDTO> getDisabledMembers() {
-        return memberService.getMembersByStatus(StatusEnum.DISABLED);
-    }
-
-
-    @GetMapping("/{status}/count")
-    @PreAuthorize("hasRole('DOCTOR')")
-    public int getCountByStatus(@PathVariable StatusEnum status) {
-        return memberService.countMembersByStatus(status);
     }
 
     @GetMapping("/status/{status}")
     @PreAuthorize("hasRole('DOCTOR')")
-    public List<MemberDTO> getMembersByStatus(@PathVariable StatusEnum status) {
-        return memberService.getMembersByStatus(status);
+    public ResponseEntity<List<MemberDTO>> getMembersByStatus(@PathVariable StatusEnum status) {
+        List<MemberDTO> members = memberService.getMembersByStatus(status);
+        return members.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(members);
     }
 
+    @GetMapping("/status/{status}/count")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<Integer> getCountByStatus(@PathVariable StatusEnum status) {
+        return ResponseEntity.ok(memberService.countMembersByStatus(status));
+    }
 
-    @PutMapping("/doctor/review-health-form/{memberId}")
+    @GetMapping("/by-email")
+    public ResponseEntity<?> getMemberByEmail(@RequestParam String email) {
+        MemberDTO member = memberService.findByEmail(email);
+        return ResponseEntity.ok(Map.of("id", member.getId()));
+    }
+
+    @GetMapping("/{memberId}/health-answers")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<List<HealthAnswerDTO>> getHealthAnswers(@PathVariable int memberId) {
+        try {
+            List<HealthAnswerDTO> dtos = memberService.getHealthAnswersForMember(memberId);
+            return ResponseEntity.ok(dtos);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PutMapping("/{memberId}/doctor/review-health-form")
     @PreAuthorize("hasRole('DOCTOR')")
     public ResponseEntity<MemberDTO> reviewHealthForm(
             @PathVariable int memberId,
@@ -222,7 +148,7 @@ public class MemberController {
         return ResponseEntity.ok(memberService.reviewHealthForm(memberId, requiresMedicalReport));
     }
 
-    @PutMapping("/doctor/review-medical-report/{memberId}")
+    @PutMapping("/{memberId}/doctor/review-medical-report")
     @PreAuthorize("hasRole('DOCTOR')")
     public ResponseEntity<MemberDTO> reviewMedicalReport(
             @PathVariable int memberId,
@@ -230,5 +156,58 @@ public class MemberController {
         return ResponseEntity.ok(memberService.reviewMedicalReport(memberId, isEligibleForPool));
     }
 
+    @PutMapping("/{memberId}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<MemberDTO> updateMemberStatus(@PathVariable int memberId, @RequestBody Map<String, String> payload) {
+        String status = payload.get("status");
+        if (status == null) return ResponseEntity.badRequest().build();
+        try {
+            return ResponseEntity.ok(memberService.updateMemberStatus(memberId, status));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 
+    @GetMapping("/pending")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<MemberDTO>> getPendingApplications() {
+        List<MemberDTO> pendingMembers = memberService.getMembersByStatuses(List.of(
+                StatusEnum.PENDING_ID_CARD_VERIFICATION,
+                StatusEnum.PENDING_PHOTO_VERIFICATION,
+                StatusEnum.PENDING_HEALTH_REPORT,
+                StatusEnum.PENDING_HEALTH_FORM_APPROVAL,
+                StatusEnum.PENDING_DOCTOR_APPROVAL
+        ));
+        return pendingMembers.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(pendingMembers);
+    }
+
+    // List all active members
+    @GetMapping("/active")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<MemberDTO>> getActiveMembers() {
+        List<MemberDTO> activeMembers = memberService.getMembersByStatus(StatusEnum.ACTIVE);
+        return activeMembers.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(activeMembers);
+    }
+
+    // List all rejected members
+    @GetMapping("/rejected")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<MemberDTO>> getRejectedMembers() {
+        List<MemberDTO> rejectedMembers = memberService.getMembersByStatuses(List.of(
+                StatusEnum.REJECTED_ID_CARD,
+                StatusEnum.REJECTED_PHOTO,
+                StatusEnum.REJECTED_HEALTH_REPORT
+        ));
+        return rejectedMembers.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(rejectedMembers);
+    }
+
+    // List all disabled members
+    @GetMapping("/disabled")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<MemberDTO>> getDisabledMembers() {
+        List<MemberDTO> disabledMembers = memberService.getMembersByStatus(StatusEnum.DISABLED);
+        return disabledMembers.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(disabledMembers);
+    }
 }

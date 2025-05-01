@@ -54,10 +54,6 @@ public class RegisterRequest {
 
     private boolean canSwim;
 
-    private String doctorToldCondition;
-    private String chestPain;
-    private String dizziness;
-
     // Document paths stored by the storage service
     private String photo;
     private String idPhotoFront;

@@ -1,5 +1,6 @@
 package com.sp.SwimmingPool.controller;
 
+import com.sp.SwimmingPool.dto.OAuthRegisterRequest;
 import com.sp.SwimmingPool.dto.RegisterRequest;
 import com.sp.SwimmingPool.service.RegistrationService;
 import jakarta.validation.Valid;
@@ -15,7 +16,7 @@ public class OAuth2RegistrationController {
     private final RegistrationService registrationService;
 
     @PostMapping("/complete-registration")
-    public ResponseEntity<?> completeOAuthRegistration(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<OAuthRegisterRequest> completeOAuthRegistration(@Valid @RequestBody RegisterRequest request) {
         registrationService.register(request);
         return ResponseEntity.ok().build();
     }
