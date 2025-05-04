@@ -27,4 +27,23 @@ public class HealthQuestionService {
     private HealthQuestionDTO mapToDto(HealthQuestion question) {
         return new HealthQuestionDTO(question.getId(), question.getQuestionText());
     }
+
+    public HealthQuestionDTO addQuestion(HealthQuestionDTO dto) {
+        HealthQuestion question = new HealthQuestion();
+        question.setQuestionText(dto.getQuestionText());
+        return mapToDto(healthQuestionRepository.save(question));
+    }
+
+    public HealthQuestionDTO updateQuestion(Long id, HealthQuestionDTO dto) {
+        HealthQuestion question = healthQuestionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Question not found"));
+        question.setQuestionText(dto.getQuestionText());
+        return mapToDto(healthQuestionRepository.save(question));
+    }
+
+    public void deleteQuestion(Long id) {
+        healthQuestionRepository.deleteById(id);
+    }
+
+
 }
