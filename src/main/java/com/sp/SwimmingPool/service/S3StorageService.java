@@ -7,7 +7,10 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
+import com.sp.SwimmingPool.model.entity.RegistrationFile;
+import com.sp.SwimmingPool.repos.RegistrationFileRepository;
 import com.sp.SwimmingPool.security.UserPrincipal;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -26,6 +29,7 @@ public class S3StorageService implements StorageService {
     private final AmazonS3 s3Client;
     private final Set<String> publicDirectories = new HashSet<>();
     private final Set<String> memberPrivateDirectories = new HashSet<>();
+    private final RegistrationFileRepository registrationFileRepository;
 
     @Value("${aws.s3.bucket-name}")
     private String bucketName;
@@ -36,7 +40,7 @@ public class S3StorageService implements StorageService {
     public S3StorageService(
             @Value("${aws.access-key}") String accessKey,
             @Value("${aws.secret-key}") String secretKey,
-            @Value("${aws.s3.region}") String region) {
+            @Value("${aws.s3.region}") String region, RegistrationFileRepository registrationFileRepository) {
 
         AWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
 
@@ -54,6 +58,7 @@ public class S3StorageService implements StorageService {
         memberPrivateDirectories.add("members");
         memberPrivateDirectories.add("registration/biometric");
         memberPrivateDirectories.add("registration/id");
+        this.registrationFileRepository = registrationFileRepository;
     }
 
     @Override
@@ -210,23 +215,13 @@ public class S3StorageService implements StorageService {
 
         // For member files, members can only access their own files
         if (isMemberPrivateFile(filePath) && authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_MEMBER"))) {
-            // If it's in the members directory, check the member ID
-            if (filePath.startsWith("members/")) {
-                Integer fileOwnerId = extractMemberId(filePath);
-                if (fileOwnerId != null) {
-                    // Get current member ID from authentication principal
-                    UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-                    Integer currentMemberId = userPrincipal.getId();
-
-                    // Members can only access their own files
-                    return fileOwnerId.equals(currentMemberId);
-                }
+            Optional<RegistrationFile> fileOpt = registrationFileRepository.findByS3Key(filePath);
+            if (fileOpt.isPresent()) {
+                RegistrationFile file = fileOpt.get();
+                UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+                Integer currentMemberId = userPrincipal.getId();
+                return file.getMember().getId() == currentMemberId;
             }
-
-            // For registration files, apply additional logic if needed
-            // (e.g., for mapping registration files to member IDs)
-
-            // By default, deny access to members for files we can't verify ownership
             return false;
         }
 

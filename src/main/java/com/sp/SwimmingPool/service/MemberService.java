@@ -25,6 +25,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final MemberHealthAssessmentRepository assessmentRepository;
+    private final MemberFileService memberFileService;
 
 
     private Member convertToEntity(MemberDTO dto) {
@@ -41,10 +42,8 @@ public class MemberService {
         member.setGender(MemberGenderEnum.valueOf(dto.getGender().toUpperCase()));
         member.setWeight(dto.getWeight());
         member.setHeight(dto.getHeight());
+        member.setBirthDate(dto.getBirthDate());
         member.setPhoneNumber(dto.getPhoneNumber());
-        member.setIdPhotoFront(dto.getIdPhotoFront());
-        member.setIdPhotoBack(dto.getIdPhotoBack());
-        member.setPhoto(dto.getPhoto());
         member.setCanSwim(dto.isCanSwim());
         member.setStatus(StatusEnum.valueOf(dto.getStatus()));
 
@@ -82,11 +81,13 @@ public class MemberService {
         dto.setGender(member.getGender().name());
         dto.setWeight(member.getWeight());
         dto.setHeight(member.getHeight());
+        dto.setBirthDate(member.getBirthDate());
         dto.setPhoneNumber(member.getPhoneNumber());
-        dto.setIdPhotoFront(member.getIdPhotoFront());
-        dto.setIdPhotoBack(member.getIdPhotoBack());
-        dto.setPhoto(member.getPhoto());
         dto.setCanSwim(member.isCanSwim());
+        memberFileService.getBiometricPhotoPath(member.getId()).ifPresent(dto::setPhoto);
+        memberFileService.getIdPhotoFrontPath(member.getId()).ifPresent(dto::setIdPhotoFront);
+        memberFileService.getIdPhotoBackPath(member.getId()).ifPresent(dto::setIdPhotoBack);
+
         dto.setStatus(String.valueOf(member.getStatus()));
 
         // Convert swimming level enum to its display name

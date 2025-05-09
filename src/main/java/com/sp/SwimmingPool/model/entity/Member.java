@@ -61,15 +61,6 @@ public class Member {
 
     private String phoneNumber;
 
-    @Column
-    private String idPhotoFront;
-
-    @Column
-    private String idPhotoBack;
-
-    @Column
-    private String photo;
-
     @Column(columnDefinition = "boolean default false")
     private boolean canSwim;
 
@@ -89,15 +80,6 @@ public class Member {
     @Column(nullable = false)
     private StatusEnum status = StatusEnum.PENDING_ID_CARD_VERIFICATION; // Setting default status
 
-    @Column(columnDefinition = "boolean default false")
-    private boolean photoVerified;
-
-    @Column(columnDefinition = "boolean default false")
-    private boolean idVerified;
-
-    @Column(columnDefinition = "boolean default false")
-    private boolean emailVerified;
-
     @Column(columnDefinition = "timestamp default CURRENT_TIMESTAMP")
     private LocalDateTime registrationDate;
 
@@ -116,17 +98,12 @@ public class Member {
             Double height,
             LocalDate birthDate,
             String phoneNumber,
-            String idPhotoFront,
-            String idPhotoBack,
-            String photo,
             boolean canSwim,
             SwimmingLevelEnum swimmingLevel,
             LocalDateTime lastLessonDate,
             String swimmingNotes,
             Integer coachId,
             StatusEnum status,
-            boolean photoVerified,
-            boolean idVerified,
             LocalDateTime registrationDate,
             LocalDateTime updatedAt
     ) {
@@ -140,17 +117,12 @@ public class Member {
         this.height = height;
         this.birthDate = birthDate;
         this.phoneNumber = phoneNumber;
-        this.idPhotoFront = idPhotoFront;
-        this.idPhotoBack = idPhotoBack;
-        this.photo = photo;
         this.canSwim = canSwim;
         this.swimmingLevel = swimmingLevel != null ? swimmingLevel : SwimmingLevelEnum.BEGINNER;
         this.lastLessonDate = lastLessonDate;
         this.swimmingNotes = swimmingNotes;
         this.coachId = coachId;
         this.status = status != null ? status : StatusEnum.PENDING_ID_CARD_VERIFICATION;
-        this.photoVerified = photoVerified;
-        this.idVerified = idVerified;
         this.registrationDate = registrationDate != null ? registrationDate : LocalDateTime.now();
         this.updatedAt = updatedAt != null ? updatedAt : LocalDateTime.now();
     }

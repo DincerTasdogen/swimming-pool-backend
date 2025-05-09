@@ -3,10 +3,12 @@ package com.sp.SwimmingPool.service;
 import com.sp.SwimmingPool.dto.AnswerRequest;
 import com.sp.SwimmingPool.dto.RegisterRequest;
 import com.sp.SwimmingPool.model.entity.Member;
+import com.sp.SwimmingPool.model.entity.RegistrationFile;
 import com.sp.SwimmingPool.model.enums.MemberGenderEnum;
 import com.sp.SwimmingPool.model.enums.StatusEnum;
 import com.sp.SwimmingPool.model.enums.SwimmingLevelEnum;
 import com.sp.SwimmingPool.repos.MemberRepository;
+import com.sp.SwimmingPool.repos.RegistrationFileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ public class RegistrationService {
     private final PasswordEncoder passwordEncoder;
     private final VerificationService verificationService;
     private final HealthAssessmentService healthAssessmentService;
+    private final RegistrationFileRepository registrationFileRepository;
 
     public boolean isEmailRegistered(String email) {
         return memberRepository.findByEmail(email).isPresent();
@@ -65,14 +68,36 @@ public class RegistrationService {
                 .canSwim(request.isCanSwim())
                 .status(StatusEnum.PENDING_ID_CARD_VERIFICATION)
                 .swimmingLevel(level)
-                .photo(photo)
-                .idPhotoFront(idPhotoFront)
-                .idPhotoBack(idPhotoBack)
                 .registrationDate(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
 
         memberRepository.save(member);
+
+        if (photo != null) {
+            registrationFileRepository.save(RegistrationFile.builder()
+                    .s3Key(photo)
+                    .member(member)
+                    .type("biometric")
+                    .uploadedAt(LocalDateTime.now())
+                    .build());
+        }
+        if (idPhotoFront != null) {
+            registrationFileRepository.save(RegistrationFile.builder()
+                    .s3Key(idPhotoFront)
+                    .member(member)
+                    .type("id-front")
+                    .uploadedAt(LocalDateTime.now())
+                    .build());
+        }
+        if (idPhotoBack != null) {
+            registrationFileRepository.save(RegistrationFile.builder()
+                    .s3Key(idPhotoBack)
+                    .member(member)
+                    .type("id-back")
+                    .uploadedAt(LocalDateTime.now())
+                    .build());
+        }
 
         if (userData != null && userData.containsKey("healthAnswers")) {
             List<AnswerRequest> healthAnswers = (List<AnswerRequest>) userData.get("healthAnswers");
