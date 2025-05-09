@@ -7,9 +7,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -38,5 +37,25 @@ public class HealthQuestionController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "Failed to retrieve health questions."));
         }
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<HealthQuestionDTO> addHealthQuestion(@RequestBody HealthQuestionDTO dto) {
+        return new ResponseEntity<>(healthQuestionService.addQuestion(dto), HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<HealthQuestionDTO> updateHealthQuestion(
+            @PathVariable Long id, @RequestBody HealthQuestionDTO dto) {
+        return ResponseEntity.ok(healthQuestionService.updateQuestion(id, dto));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<Void> deleteHealthQuestion(@PathVariable Long id) {
+        healthQuestionService.deleteQuestion(id);
+        return ResponseEntity.noContent().build();
     }
 }
