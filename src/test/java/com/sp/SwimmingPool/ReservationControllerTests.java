@@ -40,11 +40,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class ReservationControllerTests {
 
     @Autowired
-    private MockMvc mockMvc; // ✅ Artık doğru şekilde enjekte ediliyor
+    private MockMvc mockMvc;
 
     @MockBean
-    private ReservationService reservationService; // Bu mock’lanıyor çünkü birim testte kullanılacak
-    private ReservationRepository reservationRepository; // Burada repository'yi mockluyoruz
+    private ReservationService reservationService;
+    private ReservationRepository reservationRepository;
 
     @Autowired
     private SessionService sessionService;
