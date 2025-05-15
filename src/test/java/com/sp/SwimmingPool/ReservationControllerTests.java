@@ -1,14 +1,7 @@
 package com.sp.SwimmingPool;
-import com.sp.SwimmingPool.repos.ReservationRepository;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sp.SwimmingPool.dto.CreateReservationRequest;
-import com.sp.SwimmingPool.dto.ReservationResponse;
 import com.sp.SwimmingPool.dto.SessionResponse;
 import com.sp.SwimmingPool.model.entity.Reservation;
 import com.sp.SwimmingPool.service.ReservationService;
@@ -30,7 +23,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -44,7 +36,6 @@ public class ReservationControllerTests {
 
     @MockBean
     private ReservationService reservationService;
-    private ReservationRepository reservationRepository;
 
     @Autowired
     private SessionService sessionService;
@@ -53,11 +44,12 @@ public class ReservationControllerTests {
     public void AvailableSessionsForMember() {
         int memberId = 1;
         int packageId = 8;
+        int poolId = 1;
         LocalDate date = LocalDate.now();
 
         try {
             List<SessionResponse> availableSessions = sessionService.getAvailableSessionsForMemberPackage(
-                            memberId, packageId, date
+                            memberId, packageId, poolId, date
                     ).stream()
                     .map(session -> {
                         SessionResponse resp = new SessionResponse();
@@ -80,26 +72,25 @@ public class ReservationControllerTests {
 
     @Test
     public void createReservationTest() {
-        int memberId = 1;
+        int authenticatedMemberId = 1;
         int sessionId = 2;
         int memberPackageId = 8;
 
         CreateReservationRequest request = new CreateReservationRequest();
-        request.setMemberId(memberId);
         request.setSessionId(sessionId);
         request.setMemberPackageId(memberPackageId);
 
         Reservation mockReservation = new Reservation();
         mockReservation.setId(1);
-        mockReservation.setMemberId(memberId);
+        mockReservation.setMemberId(authenticatedMemberId);
         mockReservation.setSessionId(sessionId);
         mockReservation.setMemberPackageId(memberPackageId);
 
         try {
-            when(reservationService.createReservation(memberId, sessionId, memberPackageId))
+            when(reservationService.createReservation(authenticatedMemberId, sessionId, memberPackageId))
                     .thenReturn(mockReservation);
 
-            Reservation result = reservationService.createReservation(memberId, sessionId, memberPackageId);
+            Reservation result = reservationService.createReservation(authenticatedMemberId, sessionId, memberPackageId);
 
             assertThat(result).isNotNull();
             assertThat(result.getId()).isEqualTo(mockReservation.getId());
@@ -109,7 +100,7 @@ public class ReservationControllerTests {
 
         } catch (Exception e) {
             e.printStackTrace();
-            Assertions.fail("Exception occurred: " + e.getMessage());
+            Assertions.fail("Bir hata oluştu: " + e.getMessage());
         }
     }
 

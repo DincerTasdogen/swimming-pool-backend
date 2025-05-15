@@ -2,9 +2,11 @@ package com.sp.SwimmingPool.service;
 
 import com.sp.SwimmingPool.dto.HealthAnswerDTO;
 import com.sp.SwimmingPool.dto.MemberDTO;
+import com.sp.SwimmingPool.dto.MemberHealthAssessmentDTO;
 import com.sp.SwimmingPool.model.entity.Member;
 import com.sp.SwimmingPool.model.entity.MemberHealthAssessment;
 import com.sp.SwimmingPool.model.enums.MemberGenderEnum;
+import com.sp.SwimmingPool.model.enums.RiskLevel;
 import com.sp.SwimmingPool.model.enums.StatusEnum;
 import com.sp.SwimmingPool.model.enums.SwimmingLevelEnum;
 import com.sp.SwimmingPool.repos.MemberHealthAssessmentRepository;
@@ -26,6 +28,9 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final MemberHealthAssessmentRepository assessmentRepository;
     private final MemberFileService memberFileService;
+    private final MemberHealthAssessmentRepository memberHealthAssessmentRepository;
+    private final HealthAssessmentService healthAssessmentService;
+    private final RiskAssessmentService riskAssessmentService;
 
 
     private Member convertToEntity(MemberDTO dto) {
@@ -259,17 +264,29 @@ public class MemberService {
         return convertToDTO(member);
     }
 
-    public List<HealthAnswerDTO> getHealthAnswersForMember(int memberId) {
+    public MemberHealthAssessmentDTO getHealthAssessmentReviewForMember(int memberId) {
         MemberHealthAssessment assessment = assessmentRepository
                 .findTopByMemberIdOrderByCreatedAtDesc(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("Health assessment not found for member: " + memberId));
-        return assessment.getAnswers().stream()
+
+        RiskLevel riskLevel = riskAssessmentService.determineRiskLevel(assessment.getRiskScore());
+
+        List<HealthAnswerDTO> answers = assessment.getAnswers().stream()
                 .map(ans -> new HealthAnswerDTO(
                         ans.getQuestion().getQuestionText(),
                         ans.isAnswer(),
                         ans.getAdditionalNotes()
                 ))
                 .collect(Collectors.toList());
+
+        MemberHealthAssessmentDTO dto = new MemberHealthAssessmentDTO();
+        dto.setRiskScore(assessment.getRiskScore());
+        dto.setRiskLevel(riskLevel.name());
+        dto.setRiskLevelDescription(riskLevel.getDescription());
+        dto.setRequiresMedicalReport(assessment.isRequiresMedicalReport());
+        dto.setAnswers(answers);
+
+        return dto;
     }
 
 }

@@ -15,7 +15,6 @@ public interface MemberPackageRepository extends JpaRepository<MemberPackage, In
     boolean existsByMemberIdAndActiveTrue(int memberId);
     boolean existsByMemberIdAndActiveTrueAndPoolIdIsNull(int memberId);
     boolean existsByMemberIdAndActiveTrueAndPoolId(int memberId, int poolId);
-
     List<MemberPackage> findByMemberIdAndActive(int memberId, boolean active);
     List<MemberPackage> findByMemberIdAndPaymentStatus(int memberId, MemberPackagePaymentStatusEnum paymentStatus);
     List<MemberPackage> findByMemberIdAndActiveAndPaymentStatus(
@@ -26,4 +25,10 @@ public interface MemberPackageRepository extends JpaRepository<MemberPackage, In
             int memberId,
             int packageTypeId,
             boolean active);
+
+    boolean existsByPackageTypeIdAndActiveTrue(int id);
+
+    List<MemberPackage> findByMemberIdAndActiveTrueAndPaymentStatus(int memberId, MemberPackagePaymentStatusEnum memberPackagePaymentStatusEnum);
+
+    boolean existsByMemberIdAndActiveTrueAndPaymentStatus(int memberId, MemberPackagePaymentStatusEnum memberPackagePaymentStatusEnum);
 }

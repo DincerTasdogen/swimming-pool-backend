@@ -76,14 +76,19 @@ public class AuthenticationController {
             responseBuilder
                     .name(member.getName())
                     .surname(member.getSurname())
-                    .status(member.getStatus());
+                    .status(member.getStatus())
+                    .swimmingLevel(member.getSwimmingLevel())
+                    .canSwim(member.isCanSwim());
         } else if ("STAFF".equals(userPrincipal.getUserType())) {
             User user = userRepository.findById(userPrincipal.getId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User details not found for authenticated user"));
             responseBuilder
                     .name(user.getName())
                     .surname(user.getSurname())
-                    .status(null);
+                    .status(null)
+                    .swimmingLevel(null)
+                    .canSwim(null);
+
         } else {
             // Should not happen if UserPrincipal is created correctly
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null); // Or handle appropriately

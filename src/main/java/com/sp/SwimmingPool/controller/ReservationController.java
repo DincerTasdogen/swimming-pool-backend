@@ -4,154 +4,156 @@ import com.sp.SwimmingPool.dto.AvailableSessionsRequest;
 import com.sp.SwimmingPool.dto.CreateReservationRequest;
 import com.sp.SwimmingPool.dto.ReservationResponse;
 import com.sp.SwimmingPool.dto.SessionResponse;
+import com.sp.SwimmingPool.exception.EntityNotFoundException;
 import com.sp.SwimmingPool.model.entity.Pool;
 import com.sp.SwimmingPool.model.entity.Reservation;
 import com.sp.SwimmingPool.model.entity.Session;
+import com.sp.SwimmingPool.security.UserPrincipal;
 import com.sp.SwimmingPool.service.PoolService;
 import com.sp.SwimmingPool.service.ReservationService;
 import com.sp.SwimmingPool.service.SessionService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
-import static org.springframework.http.RequestEntity.post;
-
-/**
- * REST Controller for reservation operations
- */
 @RestController
 @RequestMapping("/api/reservations")
+@RequiredArgsConstructor
 public class ReservationController {
 
     private final ReservationService reservationService;
     private final SessionService sessionService;
     private final PoolService poolService;
 
-    @Autowired
-    public ReservationController(
-            ReservationService reservationService,
-            SessionService sessionService,
-            PoolService poolService) {
-        this.reservationService = reservationService;
-        this.sessionService = sessionService;
-        this.poolService = poolService;
-    }
-
-    @GetMapping("/available-sessions")
-    public ResponseEntity<List<SessionResponse>> getAvailableSessionsForMember(
-            @RequestParam int memberId,
-            @RequestParam int memberPackageId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-
-        try {
-            List<Session> availableSessions = sessionService.getAvailableSessionsForMemberPackage(
-                    memberId, memberPackageId, date);
-
-            List<SessionResponse> responseList = availableSessions.stream()
-                    .map(this::mapToSessionResponse)
-                    .collect(Collectors.toList());
-
-            return ResponseEntity.ok(responseList);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
-    }
-
     @PostMapping("/available-sessions")
+    @PreAuthorize("hasRole('MEMBER')")
     public ResponseEntity<List<SessionResponse>> getAvailableSessionsWithBody(
-            @Valid @RequestBody AvailableSessionsRequest request) {
+            @Valid @RequestBody AvailableSessionsRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        List<Session> availableSessions =
+                sessionService.getAvailableSessionsForMemberPackage(
+                        userPrincipal.getId(),
+                        request.getMemberPackageId(),
+                        request.getPoolId(),
+                        request.getDate()
+                );
 
-        try {
-            List<Session> availableSessions = sessionService.getAvailableSessionsForMemberPackage(
-                    request.getMemberId(), request.getMemberPackageId(), request.getDate());
-
-            List<SessionResponse> responseList = availableSessions.stream()
-                    .map(this::mapToSessionResponse)
-                    .collect(Collectors.toList());
-
-            return ResponseEntity.ok(responseList);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
-    }
-
-    @PostMapping
-    public ResponseEntity<ReservationResponse> createReservation(
-            @Valid @RequestBody CreateReservationRequest request) {
-
-        try {
-            Reservation reservation = reservationService.createReservation(
-                    request.getMemberId(),
-                    request.getSessionId(),
-                    request.getMemberPackageId());
-
-            ReservationResponse response = mapToReservationResponse(reservation);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
-    }
-
-    @GetMapping("/member/{memberId}")
-    public ResponseEntity<List<ReservationResponse>> getMemberReservations(@PathVariable int memberId) {
-        List<Reservation> reservations = reservationService.getReservationsByMember(memberId);
-        List<ReservationResponse> responseList = reservations.stream()
-                .map(this::mapToReservationResponse)
+        List<SessionResponse> responseList = availableSessions
+                .stream()
+                .map(this::mapToSessionResponse)
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(responseList);
     }
 
-    @GetMapping("/member/{memberId}/active")
-    public ResponseEntity<List<ReservationResponse>> getActiveMemberReservations(@PathVariable int memberId) {
-        List<Reservation> reservations = reservationService.getActiveReservationsByMember(memberId);
-        List<ReservationResponse> responseList = reservations.stream()
-                .map(this::mapToReservationResponse)
+    @GetMapping("/available-sessions")
+    @PreAuthorize("hasRole('MEMBER')")
+    public ResponseEntity<List<SessionResponse>> getAvailableSessionsForMember(
+            @RequestParam int memberPackageId,
+            @RequestParam int poolId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        List<Session> availableSessions =
+                sessionService.getAvailableSessionsForMemberPackage(
+                        userPrincipal.getId(),
+                        memberPackageId,
+                        poolId,
+                        date
+                );
+
+        List<SessionResponse> responseList = availableSessions
+                .stream()
+                .map(this::mapToSessionResponse)
                 .collect(Collectors.toList());
 
+        return ResponseEntity.ok(responseList);
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('MEMBER')")
+    public ResponseEntity<ReservationResponse> createReservation(
+            @Valid @RequestBody CreateReservationRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        Reservation reservation = reservationService.createReservation(
+                userPrincipal.getId(),
+                request.getSessionId(),
+                request.getMemberPackageId()
+        );
+        ReservationResponse response = mapToReservationResponse(reservation);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('MEMBER')")
+    public ResponseEntity<List<ReservationResponse>> getMyReservations(
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        List<Reservation> reservations =
+                reservationService.getReservationsByMember(userPrincipal.getId());
+        List<ReservationResponse> responseList = reservations
+                .stream()
+                .map(this::mapToReservationResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responseList);
+    }
+
+    @GetMapping("/me/active")
+    @PreAuthorize("hasRole('MEMBER')")
+    public ResponseEntity<List<ReservationResponse>> getMyActiveReservations(
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        List<Reservation> reservations =
+                reservationService.getActiveReservationsByMember(userPrincipal.getId());
+        List<ReservationResponse> responseList = reservations
+                .stream()
+                .map(this::mapToReservationResponse)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(responseList);
     }
 
     @PutMapping("/{reservationId}/cancel")
-    public ResponseEntity<Void> cancelReservation(@PathVariable int reservationId) {
-        try {
-            reservationService.cancelReservation(reservationId);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
+    @PreAuthorize("hasRole('MEMBER')")
+    public ResponseEntity<Void> cancelReservation(
+            @PathVariable int reservationId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        reservationService.cancelReservation(reservationId, userPrincipal.getId());
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{reservationId}/complete")
-    public ResponseEntity<Void> markReservationAsCompleted(@PathVariable int reservationId) {
-        try {
-            reservationService.markReservationAsCompleted(reservationId);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
+    @PreAuthorize("hasRole('ADMIN')") // Example security
+    public ResponseEntity<Void> markReservationAsCompleted(
+            @PathVariable int reservationId
+    ) {
+        reservationService.markReservationAsCompleted(reservationId);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{reservationId}/no-show")
-    public ResponseEntity<Void> markReservationAsNoShow(@PathVariable int reservationId) {
-        try {
-            reservationService.markReservationAsNoShow(reservationId);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> markReservationAsNoShow(
+            @PathVariable int reservationId
+    ) {
+        reservationService.markReservationAsNoShow(reservationId);
+        return ResponseEntity.noContent().build();
     }
 
-    private ReservationResponse mapToReservationResponse(Reservation reservation) {
+    private ReservationResponse mapToReservationResponse(
+            Reservation reservation
+    ) {
         ReservationResponse response = new ReservationResponse();
         response.setId(reservation.getId());
         response.setMemberId(reservation.getMemberId());
@@ -161,23 +163,29 @@ public class ReservationController {
         response.setCreatedAt(reservation.getCreatedAt());
         response.setUpdatedAt(reservation.getUpdatedAt());
 
-        // Populate session details by fetching from sessionService
         try {
             Session session = sessionService.getSession(reservation.getSessionId());
             response.setSessionDate(session.getSessionDate());
             response.setStartTime(session.getStartTime());
             response.setEndTime(session.getEndTime());
             response.setEducationSession(session.isEducationSession());
-            response.setRemainingCapacity(session.getCapacity() - session.getCurrentBookings());
+            response.setRemainingCapacity(
+                    session.getCapacity() - session.getCurrentBookings()
+            );
 
-            // Get pool name from the poolService
             Optional<Pool> poolOpt = poolService.findById(session.getPoolId());
-            poolOpt.ifPresent(pool -> response.setPoolName(pool.getName()));
+            response.setPoolName(poolOpt.map(Pool::getName).orElse("N/A"));
+        } catch (EntityNotFoundException e) {
+            System.err.println(
+                    "Error enriching reservation response: " + e.getMessage()
+            );
+            response.setPoolName("Error: Pool not found");
         } catch (Exception e) {
-            // Log error but continue
-            System.err.println("Error fetching session details: " + e.getMessage());
+            System.err.println(
+                    "Unexpected error enriching reservation response: " + e.getMessage()
+            );
+            response.setPoolName("Error");
         }
-
         return response;
     }
 
@@ -190,15 +198,15 @@ public class ReservationController {
         response.setEndTime(session.getEndTime());
         response.setCapacity(session.getCapacity());
         response.setCurrentBookings(session.getCurrentBookings());
-        response.setAvailableSpots(session.getCapacity() - session.getCurrentBookings());
+        response.setAvailableSpots(
+                Math.max(0, session.getCapacity() - session.getCurrentBookings())
+        );
         response.setEducationSession(session.isEducationSession());
-        response.setBookable(true); // By default, sessions returned are bookable
+        response.setBookable(true); // Assumes only bookable sessions are passed here
 
-        // Get pool name from pool service
         Optional<Pool> poolOpt = poolService.findById(session.getPoolId());
-        poolOpt.ifPresent(pool -> response.setPoolName(pool.getName()));
+        response.setPoolName(poolOpt.map(Pool::getName).orElse("N/A"));
 
         return response;
     }
-
 }

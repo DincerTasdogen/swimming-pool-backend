@@ -1,5 +1,7 @@
 package com.sp.SwimmingPool.service;
 
+import com.sp.SwimmingPool.exception.EntityNotFoundException;
+import com.sp.SwimmingPool.exception.InvalidOperationException;
 import com.sp.SwimmingPool.model.entity.MemberPackage;
 import com.sp.SwimmingPool.model.entity.PackageType;
 import com.sp.SwimmingPool.model.entity.Session;
@@ -7,228 +9,269 @@ import com.sp.SwimmingPool.model.enums.MemberPackagePaymentStatusEnum;
 import com.sp.SwimmingPool.repos.MemberPackageRepository;
 import com.sp.SwimmingPool.repos.PackageTypeRepository;
 import com.sp.SwimmingPool.repos.SessionRepository;
-import lombok.Setter;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service for handling session-related operations
  */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class SessionService {
 
     private final SessionRepository sessionRepository;
     private final MemberPackageRepository memberPackageRepository;
     private final PackageTypeRepository packageTypeRepository;
+    private final ReservationService reservationService;
 
-    @Setter
-    private ReservationService reservationService;
-
-    public SessionService(
-            SessionRepository sessionRepository,
-            MemberPackageRepository memberPackageRepository,
-            PackageTypeRepository packageTypeRepository,
-            @Lazy ReservationService reservationService) {
-        this.sessionRepository = sessionRepository;
-        this.memberPackageRepository = memberPackageRepository;
-        this.packageTypeRepository = packageTypeRepository;
-        this.reservationService = reservationService;
+    @Transactional(readOnly = true)
+    public Session getSession(int sessionId) {
+        return sessionRepository
+                .findById(sessionId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Seans bulunamadı! ID: " + sessionId)
+                );
     }
 
-    public Session getSession(int sessionId) throws Exception {
-        return sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new Exception("Session not found"));
-    }
-
+    @Transactional(readOnly = true)
     public List<Session> getSessionsByDate(LocalDate date) {
         return sessionRepository.findBySessionDate(date);
     }
 
+    @Transactional(readOnly = true)
     public List<Session> getSessionsByPoolAndDate(int poolId, LocalDate date) {
         return sessionRepository.findByPoolIdAndSessionDate(poolId, date);
     }
 
-    public List<Session> getAvailableSessionsForMemberPackage(int memberId, int memberPackageId, LocalDate date)
-            throws Exception {
+    @Transactional(readOnly = true)
+    public List<Session> getAvailableSessionsForMemberPackage(
+            int authenticatedMemberId,
+            int memberPackageId,
+            int poolId,
+            LocalDate date
+    ) {
+        MemberPackage memberPackage = memberPackageRepository
+                .findById(memberPackageId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Üye paketi bulunamadı! ID: " + memberPackageId
+                        )
+                );
 
-        // 1. Verify member package exists and is active
-        Optional<MemberPackage> memberPackageOpt = memberPackageRepository.findById(memberPackageId);
-        if (memberPackageOpt.isEmpty()) {
-            throw new Exception("Member package not found");
+        if (memberPackage.getMemberId() != authenticatedMemberId) {
+            throw new InvalidOperationException("Sadece kendi paketinizi kullanabilirsiniz.");
         }
-
-        MemberPackage memberPackage = memberPackageOpt.get();
-
         if (!memberPackage.isActive()) {
-            throw new Exception("Member package is not active");
+            throw new InvalidOperationException("Üye paketiniz henüz aktif durumda değil.");
         }
-
         if (memberPackage.getSessionsRemaining() <= 0) {
-            throw new Exception("No sessions remaining in package");
+            throw new InvalidOperationException(
+                    "Paketinizle rezervasyon yapabileceğiniz hakkınız kalmadı."
+            );
         }
-
-        if (memberPackage.getPaymentStatus() != MemberPackagePaymentStatusEnum.COMPLETED) {
-            throw new Exception("Package payment has not been completed");
+        if (
+                memberPackage.getPaymentStatus() !=
+                        MemberPackagePaymentStatusEnum.COMPLETED
+        ) {
+            throw new InvalidOperationException(
+                    "Paketinize ait ödeme henüz tamamlanmadı."
+            );
         }
 
         // 2. Get the package type details
-        Optional<PackageType> packageTypeOpt = packageTypeRepository.findById(memberPackage.getPackageTypeId());
-        if (packageTypeOpt.isEmpty()) {
-            throw new Exception("Package type not found");
+        PackageType packageType = packageTypeRepository
+                .findById(memberPackage.getPackageTypeId())
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Üyelik paketi bulunamadı! ID: " +
+                                        memberPackage.getPackageTypeId()
+                        )
+                );
+
+        if (memberPackage.getPoolId() > 0) { // Package is for a specific pool
+            if (memberPackage.getPoolId() != poolId) {
+                throw new InvalidOperationException(
+                        "Bu üye paketi bu havuza tanımlı değil! Geçerli olduğu havuz: (ID: " +
+                                memberPackage.getPoolId() +
+                                ")."
+                );
+            }
         }
 
-        PackageType packageType = packageTypeOpt.get();
+        // 4. Get sessions for the *specified pool* and date
+        List<Session> sessionsForPoolAndDate =
+                sessionRepository.findByPoolIdAndSessionDate(poolId, date);
 
-        // 3. Get sessions for the date
-        List<Session> sessions = sessionRepository.findBySessionDate(date);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime maxBookingDateTime = now.plusHours(72);
 
-        // 4. Filter sessions based on package restrictions
-        return sessions.stream()
+        LocalTime packageStartTime = packageType.getStartTime();
+        LocalTime packageEndTime = packageType.getEndTime();
+
+        LocalTime effectivePackageEndTime = packageEndTime.equals(LocalTime.MIDNIGHT)
+                ? LocalTime.MAX
+                : packageEndTime;
+
+        return sessionsForPoolAndDate
+                .stream()
                 .filter(session -> {
-                    // Filter by pool ID if package is restricted to specific pool
-                    if (memberPackage.getPoolId() > 0 && session.getPoolId() != memberPackage.getPoolId()) {
+                    if (
+                            packageType.isEducationPackage() &&
+                                    !session.isEducationSession()
+                    ) {
                         return false;
                     }
-
-                    // Filter by education session flag
-                    if (packageType.isEducationPackage() && !session.isEducationSession()) {
+                    if (
+                            session.getStartTime().isBefore(packageStartTime) ||
+                                    session.getEndTime().isAfter(effectivePackageEndTime)
+                    ) {
                         return false;
                     }
-
-                    // Filter by time window
-                    if (session.getStartTime().isBefore(packageType.getStartTime()) ||
-                            session.getEndTime().isAfter(packageType.getEndTime())) {
-                        return false;
-                    }
-
-                    // Filter by capacity
                     if (session.getCurrentBookings() >= session.getCapacity()) {
                         return false;
                     }
 
-                    // Check if session can be reserved (72-hour rule)
-                    LocalDateTime sessionDateTime = LocalDateTime.of(session.getSessionDate(), session.getStartTime());
-                    LocalDateTime now = LocalDateTime.now();
+                    LocalDateTime sessionStartDateTime = LocalDateTime.of(
+                            session.getSessionDate(),
+                            session.getStartTime()
+                    );
+                    LocalDateTime bookingOpenDateTime =
+                            sessionStartDateTime.minusHours(72);
 
-                    // Must be within 72 hours (not too early to book)
-                    if (sessionDateTime.minusHours(72).isAfter(now)) {
+                    // Only sessions within the next 72 hours and not in the past
+                    boolean withinBookingWindow =
+                            !now.isBefore(bookingOpenDateTime) &&
+                                    !sessionStartDateTime.isAfter(maxBookingDateTime) &&
+                                    sessionStartDateTime.isAfter(now);
+
+                    if (!withinBookingWindow) {
+                        log.debug("Session {} filtered out by booking window: Start={}, Now={}, Open={}, Max={}",
+                                session.getId(), sessionStartDateTime, now, bookingOpenDateTime, maxBookingDateTime);
                         return false;
                     }
 
-                    // Check if member already has conflicting reservation
                     try {
-                        return !reservationService.hasConflictingReservation(memberId, session);
+                        return !reservationService.hasConflictingReservation(
+                                authenticatedMemberId,
+                                session
+                        );
                     } catch (Exception e) {
+                        log.error(
+                                "Error checking conflicting reservation for session {}: {}",
+                                session.getId(),
+                                e.getMessage()
+                        );
                         return false;
                     }
                 })
                 .collect(Collectors.toList());
     }
 
+
     @Transactional
-    public Session createSession(Session session) throws Exception {
-        // Validate session data
+    public Session createSession(Session session) {
         if (session.getStartTime().isAfter(session.getEndTime())) {
-            throw new Exception("Start time must be before end time");
+            throw new InvalidOperationException(
+                    "Başlangıç zamanı bitiş zamanından önce olmalı!"
+            );
         }
-
         if (session.getCapacity() <= 0) {
-            throw new Exception("Capacity must be greater than zero");
+            throw new InvalidOperationException(
+                    "Kapasite 0'dan büyük olmalı!"
+            );
         }
-
-        // Check for duplicate session
         boolean exists = sessionRepository.existsByPoolIdAndSessionDateAndStartTime(
-                session.getPoolId(), session.getSessionDate(), session.getStartTime());
-
+                session.getPoolId(),
+                session.getSessionDate(),
+                session.getStartTime()
+        );
         if (exists) {
-            throw new Exception("A session already exists for this pool, date and time");
+            throw new InvalidOperationException(
+                    "Bu zaman aralığına, bu güne ve bu havuza ait bir seans zaten tanımlı!"
+            );
         }
-
-        // Set default values
         session.setCurrentBookings(0);
         session.setCreatedAt(LocalDateTime.now());
-
         return sessionRepository.save(session);
     }
 
     @Transactional
-    public Session updateSession(int sessionId, Session updatedSession) throws Exception {
-        Optional<Session> existingSessionOpt = sessionRepository.findById(sessionId);
-        if (existingSessionOpt.isEmpty()) {
-            throw new Exception("Session not found");
-        }
+    public Session updateSession(int sessionId, Session updatedSession) {
+        Session existingSession = getSession(sessionId); // Uses method with exception
 
-        Session existingSession = existingSessionOpt.get();
-
-        // Don't allow reducing capacity below current bookings
         if (updatedSession.getCapacity() < existingSession.getCurrentBookings()) {
-            throw new Exception("Cannot reduce capacity below current bookings");
+            throw new InvalidOperationException(
+                    "Seans kapasitesi mevcut rezervasyonun altına düşürülemez! Güncel rezervasyon sayısı: (" +
+                            existingSession.getCurrentBookings() +
+                            ")"
+            );
         }
-
-        // Update fields
         existingSession.setCapacity(updatedSession.getCapacity());
         existingSession.setEducationSession(updatedSession.isEducationSession());
-
-        // Save and return
+        existingSession.setUpdatedAt(LocalDateTime.now());
         return sessionRepository.save(existingSession);
     }
 
     @Transactional
-    public void deleteSession(int sessionId) throws Exception {
-        Optional<Session> sessionOpt = sessionRepository.findById(sessionId);
-        if (sessionOpt.isEmpty()) {
-            throw new Exception("Session not found");
-        }
-
-        Session session = sessionOpt.get();
-
-        // Don't allow deleting session with active bookings
+    public void deleteSession(int sessionId) {
+        Session session = getSession(sessionId);
         if (session.getCurrentBookings() > 0) {
-            throw new Exception("Cannot delete session with active bookings");
+            throw new InvalidOperationException(
+                    "Aktif rezervasyonu bulunan seans iptal edilemez!"
+            );
         }
-
         sessionRepository.delete(session);
     }
 
+    @Transactional
+    public Session updateSessionEducationStatus(
+            int sessionId,
+            boolean isEducationSession
+    ) {
+        Session session = getSession(sessionId);
+        session.setEducationSession(isEducationSession);
+        session.setUpdatedAt(LocalDateTime.now());
+        sessionRepository.save(session);
+        return session;
+    }
 
     @Transactional
-    public void incrementSessionBookings(int sessionId) throws Exception {
-        Optional<Session> sessionOpt = sessionRepository.findById(sessionId);
-        if (sessionOpt.isEmpty()) {
-            throw new Exception("Session not found");
-        }
-
-        Session session = sessionOpt.get();
-
+    public void incrementSessionBookings(int sessionId) {
+        Session session = getSession(sessionId);
         if (session.getCurrentBookings() >= session.getCapacity()) {
-            throw new Exception("Session is already at full capacity");
+            throw new InvalidOperationException(
+                    "Seans zaten dolu!"
+            );
         }
-
         session.setCurrentBookings(session.getCurrentBookings() + 1);
+        session.setUpdatedAt(LocalDateTime.now()); // Set update time
         sessionRepository.save(session);
     }
 
     @Transactional
-    public void decrementSessionBookings(int sessionId) throws Exception {
-        Optional<Session> sessionOpt = sessionRepository.findById(sessionId);
-        if (sessionOpt.isEmpty()) {
-            throw new Exception("Session not found");
-        }
-
-        Session session = sessionOpt.get();
-
+    public void decrementSessionBookings(int sessionId) {
+        Session session = getSession(sessionId); // Uses method with exception
         if (session.getCurrentBookings() <= 0) {
-            throw new Exception("Session has no bookings to decrement");
+            // This might indicate a data inconsistency, log a warning
+            System.err.println(
+                    "Warning: Attempted to decrement bookings for session " +
+                            sessionId +
+                            " which already has 0 bookings."
+            );
+            // Optionally throw, or just return without changing
+            return;
+            // throw new InvalidOperationException("Session has no bookings to decrement");
         }
-
         session.setCurrentBookings(session.getCurrentBookings() - 1);
+        session.setUpdatedAt(LocalDateTime.now()); // Set update time
         sessionRepository.save(session);
     }
 }

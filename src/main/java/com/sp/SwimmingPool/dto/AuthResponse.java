@@ -1,6 +1,7 @@
 package com.sp.SwimmingPool.dto;
 
 import com.sp.SwimmingPool.model.enums.StatusEnum;
+import com.sp.SwimmingPool.model.enums.SwimmingLevelEnum;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,4 +15,6 @@ public class AuthResponse {
     private String name;
     private String surname;
     private StatusEnum status;
+    private Boolean canSwim;
+    private SwimmingLevelEnum swimmingLevel;
 }

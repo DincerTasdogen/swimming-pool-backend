@@ -37,7 +37,7 @@ public class MemberHealthAssessment {
     private boolean doctorApproved;
     private String medicalReportPath;
     private String doctorNotes;
-    private Integer doctorId; // Assuming User ID is int
+    private Integer doctorId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

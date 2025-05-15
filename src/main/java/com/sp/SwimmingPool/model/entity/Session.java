@@ -48,4 +48,7 @@ public class Session {
     @Column(columnDefinition = "timestamp default CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
 
+    @Column(columnDefinition = "timestamp default CURRENT_TIMESTAMP")
+    private LocalDateTime updatedAt;
+
 }

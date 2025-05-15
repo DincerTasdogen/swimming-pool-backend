@@ -1,7 +1,7 @@
 package com.sp.SwimmingPool.controller;
 
-import com.sp.SwimmingPool.dto.HealthAnswerDTO;
 import com.sp.SwimmingPool.dto.MemberDTO;
+import com.sp.SwimmingPool.dto.MemberHealthAssessmentDTO;
 import com.sp.SwimmingPool.model.enums.StatusEnum;
 import com.sp.SwimmingPool.service.MemberService;
 import lombok.RequiredArgsConstructor;
@@ -127,16 +127,13 @@ public class MemberController {
         return ResponseEntity.ok(Map.of("id", member.getId()));
     }
 
-    @GetMapping("/{memberId}/health-answers")
+    @GetMapping("/{memberId}/health-assessment")
     @PreAuthorize("hasRole('DOCTOR')")
-    public ResponseEntity<List<HealthAnswerDTO>> getHealthAnswers(@PathVariable int memberId) {
+    public ResponseEntity<MemberHealthAssessmentDTO> getHealthAssessmentReview(@PathVariable int memberId) {
         try {
-            List<HealthAnswerDTO> dtos = memberService.getHealthAnswersForMember(memberId);
-            return ResponseEntity.ok(dtos);
+            return ResponseEntity.ok(memberService.getHealthAssessmentReviewForMember(memberId));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

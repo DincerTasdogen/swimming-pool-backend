@@ -22,6 +22,19 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
 
     boolean existsByPoolIdAndSessionDateAndStartTime(int poolId, LocalDate sessionDate, LocalTime startTime);
 
+    long countByPoolIdAndSessionDate(int poolId, LocalDate sessionDate);
+
+    List<Session> findBySessionDateBetween(LocalDate startDate, LocalDate endDate);
+
+    List<Session> findByIsEducationSessionTrue();
+    List<Session> findBySessionDateAndIsEducationSessionTrue(LocalDate sessionDate);
+
+    @Query("SELECT MAX(s.sessionDate) FROM Session s")
+    LocalDate findLatestSessionDate();
+
+    @Query("SELECT COUNT(DISTINCT s.sessionDate) FROM Session s WHERE s.sessionDate >= :fromDate")
+    long countFutureDaysWithSessions(@Param("fromDate") LocalDate fromDate);
+
     // Fix for the incorrect method name that was causing the error
     @Query("SELECT s FROM Session s WHERE s.sessionDate = :sessionDate AND s.currentBookings < s.capacity")
     List<Session> findBySessionDateAndAvailableCapacity(@Param("sessionDate") LocalDate sessionDate);

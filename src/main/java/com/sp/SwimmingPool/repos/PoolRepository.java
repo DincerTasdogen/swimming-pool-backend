@@ -12,7 +12,7 @@ public interface PoolRepository extends JpaRepository<Pool, Integer> {
     List<Pool> findByCity(String city);
     List<Pool> findByIsActive(boolean isActive);
     List<Pool> findByCityAndIsActive(String city, boolean isActive);
-
+    List<Pool> findByIsActiveTrue();
     @Query(value = "SELECT * FROM pool ORDER BY RAND() LIMIT :count", nativeQuery = true)
     List<Pool> findRandomPools(int count);
 }

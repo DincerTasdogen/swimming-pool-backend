@@ -43,7 +43,7 @@
                     .build();
         }
 
-        private RiskLevel determineRiskLevel(double score) {
+        public RiskLevel determineRiskLevel(double score) {
             double highRiskThreshold = 15.0;
             if (score >= highRiskThreshold) return RiskLevel.HIGH;
             double mediumRiskThreshold = 8.0;

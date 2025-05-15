@@ -8,9 +8,13 @@ import java.util.List;
 public interface PackageTypeRepository extends JpaRepository<PackageType, Integer> {
     List<PackageType> findByIsEducationPackageTrue();
     List<PackageType> findByIsEducationPackageFalse();
-
+    boolean existsByName(String name);
     PackageType findByName(String name);
-    List<PackageType> findByIsActive(boolean isActive);
-    List<PackageType> findByIsEducationPackage(boolean isEducationPackage);
-    List<PackageType> findByIsActiveAndIsEducationPackage(boolean isActive, boolean isEducationPackage);
+    List<PackageType> findByIsActiveTrue();
+    List<PackageType> findByIsEducationPackageTrueAndIsActiveTrue();
+    List<PackageType> findByIsEducationPackageFalseAndIsActiveTrue();
+
+    List<PackageType> findAllByOrderByIsActiveDescNameAsc();
+
+    List<PackageType> findByIsActiveTrueOrderByNameAsc();
 }

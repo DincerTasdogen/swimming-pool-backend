@@ -57,6 +57,8 @@ public class AuthService {
                     .name(user != null ? user.getName() : member.getName())
                     .id(user != null ? user.getId() : member.getId())
                     .status(user != null ? null : member.getStatus())
+                    .swimmingLevel(user != null ? null : member.getSwimmingLevel())
+                    .canSwim(user != null ? null : member.isCanSwim())
                     .build();
         } catch (BadCredentialsException e) {
             throw new InvalidCredentialsException();
@@ -78,6 +80,8 @@ public class AuthService {
                 .id(user != null ? user.getId() : member.getId())
                 .name(user != null ? user.getName() : member.getName())
                 .status(user != null ? null : member.getStatus())
+                .swimmingLevel(user != null ? null : member.getSwimmingLevel())
+                .canSwim(user != null ? null : member.isCanSwim())
                 .build();
     }
 

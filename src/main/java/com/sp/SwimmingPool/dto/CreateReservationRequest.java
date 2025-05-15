@@ -6,11 +6,6 @@ import lombok.Data;
 
 @Data
 public class CreateReservationRequest {
-
-    @NotNull(message = "Member ID is required")
-    @Min(value = 1, message = "Member ID must be positive")
-    private int memberId;
-
     @NotNull(message = "Session ID is required")
     @Min(value = 1, message = "Session ID must be positive")
     private int sessionId;
