@@ -65,26 +65,4 @@ public class AuthService {
         }
     }
 
-    public AuthResponse getCurrentUser(String email) {
-        User user = userRepository.findByEmail(email).orElse(null);
-        Member member = null;
-        if (user == null) {
-            member = memberRepository.findByEmail(email)
-                    .orElseThrow(() -> new UserNotFoundException(email));
-        }
-
-        return AuthResponse.builder()
-                .userType(user != null ? "STAFF" : "MEMBER")
-                .role(user != null ? user.getRole().name() : "MEMBER")
-                .email(email)
-                .id(user != null ? user.getId() : member.getId())
-                .name(user != null ? user.getName() : member.getName())
-                .status(user != null ? null : member.getStatus())
-                .swimmingLevel(user != null ? null : member.getSwimmingLevel())
-                .canSwim(user != null ? null : member.isCanSwim())
-                .build();
-    }
-
-
-
 }

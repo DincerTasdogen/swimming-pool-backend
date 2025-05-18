@@ -10,7 +10,6 @@ import com.amazonaws.services.s3.model.*;
 import com.sp.SwimmingPool.model.entity.RegistrationFile;
 import com.sp.SwimmingPool.repos.RegistrationFileRepository;
 import com.sp.SwimmingPool.security.UserPrincipal;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -52,6 +51,7 @@ public class S3StorageService implements StorageService {
 
         // Define which directories should be public
         publicDirectories.add("pools");
+        publicDirectories.add("news");
         publicDirectories.add("public");
 
         // Define which directories should be member-private (require role-based access control)

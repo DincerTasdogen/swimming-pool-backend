@@ -1,6 +1,7 @@
 package com.sp.SwimmingPool.service;
 
 import com.sp.SwimmingPool.dto.NewsDTO;
+import com.sp.SwimmingPool.exception.EntityNotFoundException;
 import com.sp.SwimmingPool.model.entity.News;
 import com.sp.SwimmingPool.repos.NewsRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,13 @@ public class NewsService {
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+    }
+
+    public NewsDTO getNewsById(int id) {
+        News news = newsRepository.findById(id).orElseThrow(() ->
+                new EntityNotFoundException(id + " ID'li haber bulunamadı.")
+        );
+        return convertToDTO(news);
     }
 
     public NewsDTO createNews(NewsDTO dto) {

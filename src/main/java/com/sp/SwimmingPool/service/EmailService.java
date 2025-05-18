@@ -2,8 +2,7 @@ package com.sp.SwimmingPool.service;
 
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger; // Use SLF4J for logging
-import org.slf4j.LoggerFactory; // Use SLF4J for logging
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -16,11 +15,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor // Lombok annotation for constructor injection of final fields
 public class EmailService {
-
-    private static final Logger log = LoggerFactory.getLogger(EmailService.class); // Logger instance
 
     private final JavaMailSender mailSender; // Marked final for constructor injection
 
@@ -138,8 +136,6 @@ public class EmailService {
             // - Throw a custom exception (but be careful with @Async void methods)
         }
     }
-
-    // --- Specific Email Sending Methods ---
 
     public void sendVerificationEmail(String to, String code) {
         String subject = "E-posta Doğrulama";

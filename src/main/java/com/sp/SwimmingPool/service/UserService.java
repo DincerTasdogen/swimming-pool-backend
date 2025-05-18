@@ -4,8 +4,7 @@ import com.sp.SwimmingPool.dto.UserDTO;
 import com.sp.SwimmingPool.model.entity.User;
 import com.sp.SwimmingPool.repos.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger; // Use SLF4J for logging
-import org.slf4j.LoggerFactory; // Use SLF4J for logging
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Import for transactional methods
@@ -15,11 +14,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
-@RequiredArgsConstructor // Lombok for constructor injection of final fields
+@RequiredArgsConstructor
 public class UserService {
-
-    private static final Logger log = LoggerFactory.getLogger(UserService.class); // Logger instance
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;

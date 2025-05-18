@@ -43,6 +43,21 @@ public class FileUploadController {
         }
     }
 
+    @PostMapping("/news-image")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> uploadNewsImage(@RequestParam("file") MultipartFile file) {
+        try {
+            String filePath = storageService.storeFile(file, "news");
+            Map<String, String> response = new HashMap<>();
+            response.put("path", filePath);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("error", "Failed to upload image: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
     @GetMapping("/files/**")
     public ResponseEntity<Resource> downloadFile(HttpServletRequest request) {
         try {

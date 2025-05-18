@@ -16,8 +16,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PackageTypeController {
 
-    @Autowired
     private PackageService packageService;
+
+    @Autowired
+    public PackageTypeController(PackageService packageService) {
+        this.packageService = packageService;
+    }
 
     @GetMapping
     public ResponseEntity<List<PackageTypeDTO>> getAllPackageTypes() {

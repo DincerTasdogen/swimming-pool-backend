@@ -12,7 +12,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/news")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 public class NewsController {
 
     private final NewsService newsService;
@@ -22,17 +21,23 @@ public class NewsController {
         return ResponseEntity.ok(newsService.getAllNews());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<NewsDTO> getNews(@PathVariable("id") int id) {return ResponseEntity.ok(newsService.getNewsById(id));}
+
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<NewsDTO> createNews(@RequestBody NewsDTO dto) {
         return ResponseEntity.ok(newsService.createNews(dto));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<NewsDTO> updateNews(@PathVariable Integer id, @RequestBody NewsDTO dto) {
         return ResponseEntity.ok(newsService.updateNews(id, dto));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteNews(@PathVariable Integer id) {
         newsService.deleteNews(id);
         return ResponseEntity.noContent().build();

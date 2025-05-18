@@ -5,8 +5,7 @@ import com.sp.SwimmingPool.model.entity.User; // Import User entity
 import com.sp.SwimmingPool.service.EmailService;
 import com.sp.SwimmingPool.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger; // Use SLF4J for logging
-import org.slf4j.LoggerFactory; // Use SLF4J for logging
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,12 +16,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/staff") // Base path for staff-related operations
 @RequiredArgsConstructor // Lombok for constructor injection of final fields
 public class UserController {
-
-    private static final Logger log = LoggerFactory.getLogger(UserController.class); // Logger instance
 
     private final UserService userService; // Marked final for injection
     private final EmailService emailService; // Marked final for injection

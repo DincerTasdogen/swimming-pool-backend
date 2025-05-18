@@ -1,9 +1,7 @@
 package com.sp.SwimmingPool.controller;
 
 import com.sp.SwimmingPool.dto.MemberPackageDTO;
-import com.sp.SwimmingPool.model.entity.MemberPackage;
 import com.sp.SwimmingPool.service.PackageService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,8 +11,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/MemberPackages")
 public class MemberPackageController {
-    @Autowired
-    private PackageService packageService;
+    private final PackageService packageService;
+
+    public MemberPackageController(PackageService packageService) {
+        this.packageService = packageService;
+    }
 
     @GetMapping("/all/{memberId}")
     public ResponseEntity<List<MemberPackageDTO>> getAllMemberPackages(@PathVariable int memberId) {
