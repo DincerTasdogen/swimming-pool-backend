@@ -128,12 +128,7 @@ public class EmailService {
             log.info("{} email sent successfully to: {}", type, to);
 
         } catch (Exception e) {
-            // Log more specific errors if possible (e.g., MailAuthenticationException, MailSendException)
             log.error("Failed to send {} email to: {}. Error: {}", type, to, e.getMessage(), e);
-            // Depending on the application's needs, you might want to:
-            // - Retry sending later
-            // - Notify an admin
-            // - Throw a custom exception (but be careful with @Async void methods)
         }
     }
 
@@ -237,5 +232,26 @@ public class EmailService {
                 true  // Show success icon
         );
         sendEmail(to, subject, content, "Registration Approval");
+    }
+
+    public void sendInvalidDocumentNotification(String to, String memberName, String reason) {
+        String subject = "Sağlık Raporunuz Hakkında Aksiyon Gerekli!";
+        String template = readEmailTemplate();
+        String mainMessage = "Merhaba " + (memberName != null ? memberName : "Değerli Üyemiz") +
+                ",<br><br>Yüklediğiniz sağlık raporunu gözden geçirdik. Ne yazık ki sağlık raporunuzu kabul edemiyoruz.";
+        String helpText = "Sebep: <span class=\"highlight\">" + (reason != null ? reason : "Belirtilmedi") + "</span>" +
+                "<br><br>Lütfen hesabınıza girerek sağlık raporunuzu yeniden yükleyin. " +
+                "Yüklemeden önce lütfen sağlık raporunuzun okunabilir olduğundan ve tüm gereksinimleri karşıladığından emin olun." +
+                "<br>Daha fazla sorunuz varsa iletişime geçmekten çekinmeyin.";
+
+        String content = prepareEmailContent(
+                template,
+                "Sağlık Raporunuz Hakkında",
+                mainMessage,
+                helpText,
+                null,
+                false
+        );
+        sendEmail(to, subject, content, "Invalid Medical Document");
     }
 }

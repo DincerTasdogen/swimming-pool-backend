@@ -145,14 +145,6 @@ public class MemberController {
         return ResponseEntity.ok(memberService.reviewHealthForm(memberId, requiresMedicalReport));
     }
 
-    @PutMapping("/{memberId}/doctor/review-medical-report")
-    @PreAuthorize("hasRole('DOCTOR')")
-    public ResponseEntity<MemberDTO> reviewMedicalReport(
-            @PathVariable int memberId,
-            @RequestParam boolean isEligibleForPool) {
-        return ResponseEntity.ok(memberService.reviewMedicalReport(memberId, isEligibleForPool));
-    }
-
     @PutMapping("/{memberId}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MemberDTO> updateMemberStatus(@PathVariable int memberId, @RequestBody Map<String, String> payload) {

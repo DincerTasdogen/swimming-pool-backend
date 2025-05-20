@@ -54,6 +54,7 @@ public class NewsService {
         news.setTitle(dto.getTitle());
         news.setContent(dto.getContent());
         news.setImageUrl(dto.getImageUrl());
+        news.setAuthor(dto.getAuthor());
         news.setUpdatedAt(LocalDateTime.now());
         return convertToDTO(newsRepository.save(news));
     }

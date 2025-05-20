@@ -112,18 +112,12 @@ public class FileUploadController {
         }
 
         String extension = filePath.substring(filePath.lastIndexOf(".") + 1).toLowerCase();
-        switch (extension) {
-            case "jpg":
-            case "jpeg":
-                return "image/jpeg";
-            case "png":
-                return "image/png";
-            case "gif":
-                return "image/gif";
-            case "pdf":
-                return "application/pdf";
-            default:
-                return MediaType.APPLICATION_OCTET_STREAM_VALUE;
-        }
+        return switch (extension) {
+            case "jpg", "jpeg" -> "image/jpeg";
+            case "png" -> "image/png";
+            case "gif" -> "image/gif";
+            case "pdf" -> "application/pdf";
+            default -> MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        };
     }
 }

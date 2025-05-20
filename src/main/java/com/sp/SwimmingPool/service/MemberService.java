@@ -3,6 +3,7 @@ package com.sp.SwimmingPool.service;
 import com.sp.SwimmingPool.dto.HealthAnswerDTO;
 import com.sp.SwimmingPool.dto.MemberDTO;
 import com.sp.SwimmingPool.dto.MemberHealthAssessmentDTO;
+import com.sp.SwimmingPool.dto.MemberReportStatusDTO;
 import com.sp.SwimmingPool.model.entity.Member;
 import com.sp.SwimmingPool.model.entity.MemberHealthAssessment;
 import com.sp.SwimmingPool.model.enums.MemberGenderEnum;
@@ -12,14 +13,17 @@ import com.sp.SwimmingPool.model.enums.SwimmingLevelEnum;
 import com.sp.SwimmingPool.repos.MemberHealthAssessmentRepository;
 import com.sp.SwimmingPool.repos.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MemberService {
@@ -28,9 +32,10 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final MemberHealthAssessmentRepository assessmentRepository;
     private final MemberFileService memberFileService;
-    private final MemberHealthAssessmentRepository memberHealthAssessmentRepository;
+    private final EmailService emailService;
     private final HealthAssessmentService healthAssessmentService;
     private final RiskAssessmentService riskAssessmentService;
+    private final StorageService storageService;
 
 
     private Member convertToEntity(MemberDTO dto) {
@@ -95,7 +100,6 @@ public class MemberService {
 
         dto.setStatus(String.valueOf(member.getStatus()));
 
-        // Convert swimming level enum to its display name
         if (member.getSwimmingLevel() != null) {
             dto.setSwimmingLevel(member.getSwimmingLevel().getDisplayName());
         }
@@ -105,6 +109,16 @@ public class MemberService {
         dto.setCoachId(member.getCoachId());
         dto.setRegistrationDate(member.getRegistrationDate());
         dto.setUpdatedDate(member.getUpdatedAt());
+
+        Optional<MemberHealthAssessment> assessmentOpt = assessmentRepository
+                .findTopByMemberIdOrderByCreatedAtDesc(member.getId());
+        if (assessmentOpt.isPresent()) {
+            MemberHealthAssessment assessment = assessmentOpt.get();
+            dto.setLatestMedicalReportPath(assessment.getMedicalReportPath());
+            dto.setRequiresMedicalReport(assessment.isRequiresMedicalReport());
+        } else {
+            dto.setRequiresMedicalReport(member.getStatus() == StatusEnum.PENDING_HEALTH_REPORT);
+        }
 
         return dto;
     }
@@ -249,18 +263,85 @@ public class MemberService {
         return convertToDTO(member);
     }
 
-    // Sağlık raporunu incele ve onay ver / reddet
-    public MemberDTO reviewMedicalReport(int memberId, boolean isEligibleForPool) {
+    public MemberReportStatusDTO getMemberReportStatus(int memberId) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new RuntimeException("Member not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Member not found with id: " + memberId));
 
-        if (isEligibleForPool) {
-            member.setStatus(StatusEnum.ACTIVE);
+        Optional<MemberHealthAssessment> assessmentOpt = assessmentRepository
+                .findTopByMemberIdOrderByCreatedAtDesc(memberId);
+
+        if (assessmentOpt.isPresent()) {
+            MemberHealthAssessment assessment = assessmentOpt.get();
+            return new MemberReportStatusDTO(
+                    member.getStatus(),
+                    assessment.getDoctorNotes(),
+                    assessment.isRequiresMedicalReport(),
+                    assessment.getMedicalReportPath(),
+                    assessment.getUpdatedAt(),
+                    assessment.isDoctorApproved()
+            );
         } else {
-            member.setStatus(StatusEnum.REJECTED_HEALTH_REPORT);
+            return new MemberReportStatusDTO(
+                    member.getStatus(),
+                    null,
+                    member.getStatus() == StatusEnum.PENDING_HEALTH_REPORT,
+                    null,
+                    null,
+                    false
+            );
+        }
+    }
+
+    public MemberDTO processDoctorMedicalReportReview(
+            int memberId,
+            int doctorId,
+            boolean isEligibleForPool,
+            boolean isDocumentInvalid,
+            String doctorNotes
+    ) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Üye bulunamadı Üye ID: " + memberId));
+
+        MemberHealthAssessment assessment = assessmentRepository
+                .findTopByMemberIdOrderByCreatedAtDesc(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Bu üyeye ait sağlık değerlendirmesi bulunamadı Üye ID: " + memberId));
+
+        assessment.setDoctorId(doctorId);
+        assessment.setDoctorNotes(doctorNotes);
+        assessment.setUpdatedAt(LocalDateTime.now());
+
+        if (isDocumentInvalid) {
+            assessment.setDoctorApproved(false);
+            assessment.setRequiresMedicalReport(true);
+
+
+             if (assessment.getMedicalReportPath() != null && !assessment.getMedicalReportPath().isBlank()) {
+                 try {
+                     storageService.deleteFile(assessment.getMedicalReportPath());
+                 } catch (IOException e) {
+                     log.error("Could not delete invalid medical report file: {} - {}", assessment.getMedicalReportPath(), e.getMessage());
+                 }
+             }
+            assessment.setMedicalReportPath(null); // Clear the path
+
+            member.setStatus(StatusEnum.PENDING_HEALTH_REPORT);
+            emailService.sendInvalidDocumentNotification(member.getEmail(), member.getName(), doctorNotes);
+        } else {
+            assessment.setDoctorApproved(isEligibleForPool);
+            assessment.setRequiresMedicalReport(false);
+
+            if (isEligibleForPool) {
+                member.setStatus(StatusEnum.ACTIVE);
+                emailService.sendRegistrationApproval(member.getEmail());
+            } else {
+                member.setStatus(StatusEnum.REJECTED_HEALTH_REPORT);
+                emailService.sendRegistrationRejection(member.getEmail(), doctorNotes);
+            }
         }
 
+        assessmentRepository.save(assessment);
         memberRepository.save(member);
+
         return convertToDTO(member);
     }
 
