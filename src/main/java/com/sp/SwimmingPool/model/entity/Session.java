@@ -13,7 +13,8 @@ import java.time.LocalTime;
         name = "session",
         indexes = {
                 @Index(name = "uk_pool_session", columnList = "poolId, sessionDate, startTime", unique = true),
-                @Index(name = "idx_session_date", columnList = "sessionDate")
+                @Index(name = "idx_session_date", columnList = "sessionDate"),
+                @Index(name = "idx_session_iseducation", columnList = "isEducationSession")
         }
 )
 @Getter

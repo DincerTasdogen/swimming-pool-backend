@@ -1,10 +1,12 @@
 package com.sp.SwimmingPool.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+@AllArgsConstructor
 @Data
 public class SessionResponse {
     private int id;

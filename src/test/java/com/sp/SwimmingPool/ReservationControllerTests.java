@@ -49,20 +49,16 @@ public class ReservationControllerTests {
 
         try {
             List<SessionResponse> availableSessions = sessionService.getAvailableSessionsForMemberPackage(
-                            memberId, packageId, poolId, date
-                    ).stream()
-                    .map(session -> {
-                        SessionResponse resp = new SessionResponse();
-                        resp.setId(session.getId());
-                        resp.setSessionDate(session.getSessionDate());
-                        resp.setStartTime(session.getStartTime());
-                        resp.setEndTime(session.getEndTime());
-                        resp.setAvailableSpots(session.getCapacity() - session.getCurrentBookings());
-                        return resp;
-                    })
-                    .toList();
+                    memberId, packageId, poolId, date
+            );
 
-            assertThat(availableSessions).isNotNull();
+            assertThat(availableSessions)
+                    .isNotNull()
+                    .allSatisfy(session -> {
+                        assertThat(session.getId()).isPositive();
+                        assertThat(session.getSessionDate()).isEqualTo(date);
+                        assertThat(session.getAvailableSpots()).isGreaterThanOrEqualTo(0);
+                    });
 
         } catch (Exception e) {
             e.printStackTrace();

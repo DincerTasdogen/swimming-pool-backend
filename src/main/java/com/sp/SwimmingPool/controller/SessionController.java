@@ -25,16 +25,9 @@ public class SessionController {
     private final ScheduledSessionCreationService scheduledSessionCreationService;
     private final SessionService sessionService;
 
-    /**
-     * Manually triggers session generation.
-     * Restricted to ADMIN users only.
-     *
-     * @return Response indicating success or failure
-     */
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/generate")
     public ResponseEntity<ApiResponse> generateSessions() {
-
         try {
             log.info("Manual session generation triggered.");
             scheduledSessionCreationService.generateScheduledSessions();
@@ -91,12 +84,6 @@ public class SessionController {
         }
     }
 
-    /**
-     * Manually checks minimum session availability and generates sessions if needed.
-     * Restricted to ADMIN users only.
-     *
-     * @return Response indicating success or failure
-     */
     @PostMapping("/ensure-availability")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse> ensureSessionAvailability() {
@@ -112,5 +99,4 @@ public class SessionController {
             );
         }
     }
-
 }

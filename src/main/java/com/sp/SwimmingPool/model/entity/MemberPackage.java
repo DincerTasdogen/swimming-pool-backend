@@ -11,7 +11,11 @@ import java.time.LocalDateTime;
 @Table(
         name = "member_package",
         indexes = {
-                @Index(name = "idx_member_package_member", columnList = "memberId")
+                @Index(name = "idx_member_package_member", columnList = "memberId"),
+                @Index(name = "idx_memberpackage_member_active", columnList = "memberId,active"),
+                @Index(name = "idx_memberpackage_member_status", columnList = "memberId,paymentStatus"),
+                @Index(name = "idx_memberpackage_packagetype", columnList = "packageTypeId"),
+                @Index(name = "idx_memberpackage_pool", columnList = "poolId")
         }
 )
 @Getter

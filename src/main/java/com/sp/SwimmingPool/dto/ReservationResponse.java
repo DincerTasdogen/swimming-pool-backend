@@ -1,11 +1,14 @@
 package com.sp.SwimmingPool.dto;
 
 import com.sp.SwimmingPool.model.enums.ReservationStatusEnum;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+
+@AllArgsConstructor
 @Data
 public class ReservationResponse {
     private int id;

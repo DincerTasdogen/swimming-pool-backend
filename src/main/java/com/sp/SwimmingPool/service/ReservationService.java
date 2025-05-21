@@ -1,5 +1,7 @@
 package com.sp.SwimmingPool.service;
 
+import com.sp.SwimmingPool.dto.ReservationResponse;
+import com.sp.SwimmingPool.dto.SessionResponse;
 import com.sp.SwimmingPool.exception.EntityNotFoundException;
 import com.sp.SwimmingPool.exception.InvalidOperationException;
 import com.sp.SwimmingPool.model.entity.MemberPackage;
@@ -19,6 +21,8 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,16 +38,48 @@ public class ReservationService {
     private final MemberService memberService;
 
     @Transactional(readOnly = true)
-    public List<Reservation> getReservationsByMember(int memberId) {
-        return reservationRepository.findByMemberId(memberId);
+    public Page<ReservationResponse> getReservationsByMember(int memberId, int page, int size) {
+        return reservationRepository.findReservationResponsesByMemberId(
+                memberId, PageRequest.of(page, size)
+        );
     }
 
     @Transactional(readOnly = true)
-    public List<Reservation> getActiveReservationsByMember(int memberId) {
-        return reservationRepository.findByMemberIdAndStatus(
-                memberId,
-                ReservationStatusEnum.CONFIRMED
+    public List<Reservation> getMemberConfirmedReservationsOnDate(int memberId, LocalDate date) {
+        return reservationRepository.findByMemberIdAndStatusAndSessionDate(
+                memberId, ReservationStatusEnum.CONFIRMED, date
         );
+    }
+
+    public boolean hasTimeConflict(Session session, List<Reservation> reservations) {
+        for (Reservation reservation : reservations) {
+            if (reservation.getSessionId() == session.getId()) continue;
+            Optional<Session> existingSessionOpt = sessionRepository.findById(reservation.getSessionId());
+            if (existingSessionOpt.isEmpty()) continue;
+            Session existingSession = existingSessionOpt.get();
+            if (isTimeOverlap(session.getStartTime(), session.getEndTime(),
+                    existingSession.getStartTime(), existingSession.getEndTime())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean hasTimeConflict(SessionResponse session, List<Reservation> reservations) {
+        for (Reservation reservation : reservations) {
+            Optional<Session> existingSessionOpt = sessionRepository.findById(reservation.getSessionId());
+            if (existingSessionOpt.isEmpty()) continue;
+            Session existingSession = existingSessionOpt.get();
+            if (isTimeOverlap(session.getStartTime(), session.getEndTime(),
+                    existingSession.getStartTime(), existingSession.getEndTime())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isTimeOverlap(LocalTime startA, LocalTime endA, LocalTime startB, LocalTime endB) {
+        return startA.isBefore(endB) && endA.isAfter(startB);
     }
 
     @Transactional
@@ -60,7 +96,6 @@ public class ReservationService {
                         new EntityNotFoundException(sessionId + " ID'li seans bulunamadı.")
                 );
 
-        // 1. Booking window: only allow booking for sessions within the next 72 hours
         LocalDateTime sessionStartDateTime = LocalDateTime.of(
                 session.getSessionDate(),
                 session.getStartTime()
@@ -147,7 +182,9 @@ public class ReservationService {
             }
         }
 
-        if (hasConflictingReservation(authenticatedMemberId, session)) {
+        // Batch conflict check for the same date
+        List<Reservation> reservationsOnDate = getMemberConfirmedReservationsOnDate(authenticatedMemberId, session.getSessionDate());
+        if (hasTimeConflict(session, reservationsOnDate)) {
             throw new InvalidOperationException("Bu saatler arasında başka bir rezervasyon yapılmış.");
         }
 
@@ -254,43 +291,6 @@ public class ReservationService {
         reservation.setStatus(ReservationStatusEnum.CANCELLED);
         reservation.setUpdatedAt(now);
         reservationRepository.save(reservation);
-    }
-
-    @Transactional(readOnly = true)
-    public boolean hasConflictingReservation(int memberId, Session newSession) {
-        List<Reservation> activeReservations = getActiveReservationsByMember(memberId);
-
-        for (Reservation reservation : activeReservations) {
-            if (reservation.getSessionId() == newSession.getId()) {
-                continue;
-            }
-
-            Optional<Session> existingSessionOpt = sessionRepository.findById(
-                    reservation.getSessionId()
-            );
-
-            if (existingSessionOpt.isPresent()) {
-                Session existingSession = existingSessionOpt.get();
-
-                // Check if sessions are on the same date
-                if (
-                        existingSession.getSessionDate().equals(newSession.getSessionDate())
-                ) {
-                    // Check for time overlap: (StartA < EndB) and (EndA > StartB)
-                    boolean startsBeforeEnds = existingSession
-                            .getStartTime()
-                            .isBefore(newSession.getEndTime());
-                    boolean endsAfterStarts = existingSession
-                            .getEndTime()
-                            .isAfter(newSession.getStartTime());
-
-                    if (startsBeforeEnds && endsAfterStarts) {
-                        return true; // Conflict found
-                    }
-                }
-            }
-        }
-        return false; // No conflicts found
     }
 
     @Transactional
