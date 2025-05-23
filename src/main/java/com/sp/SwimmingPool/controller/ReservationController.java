@@ -14,6 +14,7 @@ import com.sp.SwimmingPool.service.SessionService;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
@@ -146,5 +147,30 @@ public class ReservationController {
     ) {
         reservationService.markReservationAsNoShow(reservationId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/complete-by-qr")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COACH', 'DOCTOR')")
+    public ResponseEntity<?> completeReservationByQr(@RequestBody Map<String, String> body) {
+        String qrToken = body.get("qrToken");
+        if (qrToken == null || qrToken.isEmpty()) {
+            return ResponseEntity.badRequest().body("QR kodu eksik.");
+        }
+        try {
+            reservationService.completeReservationByQrToken(qrToken);
+            return ResponseEntity.ok("Giriş başarılı, rezervasyon tamamlandı.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{reservationId}/qr-token")
+    @PreAuthorize("hasRole('MEMBER')")
+    public ResponseEntity<?> getReservationQrToken(
+            @PathVariable int reservationId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal
+    ) {
+        String qrToken = reservationService.generateReservationQrTokenForMember(reservationId, userPrincipal.getId());
+        return ResponseEntity.ok(Map.of("qrToken", qrToken));
     }
 }

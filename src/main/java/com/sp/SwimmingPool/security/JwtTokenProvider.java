@@ -8,6 +8,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Base64;
 import java.util.Date;
 
@@ -62,5 +64,30 @@ public class JwtTokenProvider {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    public String generateReservationQrToken(int reservationId, int memberId, LocalDateTime sessionStart, LocalDateTime sessionEnd) {
+        Date now = new Date();
+        Date notBefore = Date.from(sessionStart.minusMinutes(5).atZone(ZoneId.systemDefault()).toInstant());
+        Date expiry = Date.from(sessionEnd.atZone(ZoneId.systemDefault()).toInstant());
+
+        return Jwts.builder()
+                .claim("reservationId", reservationId)
+                .claim("memberId", memberId)
+                .claim("sessionStart", sessionStart.toString())
+                .claim("sessionEnd", sessionEnd.toString())
+                .notBefore(notBefore)
+                .expiration(expiry)
+                .issuedAt(now)
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    public Claims parseReservationQrToken(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }

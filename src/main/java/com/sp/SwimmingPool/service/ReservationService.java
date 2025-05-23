@@ -19,6 +19,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+
+import com.sp.SwimmingPool.security.JwtTokenProvider;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -36,6 +39,7 @@ public class ReservationService {
     private final MemberPackageRepository memberPackageRepository;
     private final PackageTypeRepository packageTypeRepository;
     private final MemberService memberService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Transactional(readOnly = true)
     public Page<ReservationResponse> getReservationsByMember(int memberId, int page, int size) {
@@ -372,5 +376,65 @@ public class ReservationService {
         if (processedCount > 0) {
             log.info("Processed {} missed reservations as NO_SHOW.", processedCount);
         }
+    }
+
+    @Transactional
+    public void completeReservationByQrToken(String qrToken) {
+        Claims claims;
+        try {
+            claims = jwtTokenProvider.parseReservationQrToken(qrToken);
+        } catch (Exception e) {
+            throw new InvalidOperationException("Geçersiz veya süresi dolmuş QR kodu.");
+        }
+
+        int reservationId = (int) claims.get("reservationId");
+        int memberId = (int) claims.get("memberId");
+        LocalDateTime sessionStart = LocalDateTime.parse((String) claims.get("sessionStart"));
+        LocalDateTime sessionEnd = LocalDateTime.parse((String) claims.get("sessionEnd"));
+        LocalDateTime now = LocalDateTime.now();
+
+        if (now.isBefore(sessionStart.minusMinutes(5)) || now.isAfter(sessionEnd)) {
+            throw new InvalidOperationException("Rezervasyon saat aralığı dışında giriş yapılamaz.");
+        }
+
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new EntityNotFoundException("Rezervasyon bulunamadı! ID: " + reservationId));
+
+        if (reservation.getMemberId() != memberId) {
+            throw new InvalidOperationException("QR kodu bu rezervasyona ait değil.");
+        }
+        if (reservation.getStatus() != ReservationStatusEnum.CONFIRMED) {
+            throw new InvalidOperationException("Sadece onaylanmış rezervasyonlar tamamlanabilir.");
+        }
+
+        reservation.setStatus(ReservationStatusEnum.COMPLETED);
+        reservation.setUpdatedAt(now);
+        reservationRepository.save(reservation);
+    }
+
+    public String generateReservationQrTokenForMember(int reservationId, int memberId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new EntityNotFoundException("Rezervasyon bulunamadı! ID: " + reservationId));
+
+        if (reservation.getMemberId() != memberId) {
+            throw new InvalidOperationException("Bu rezervasyon size ait değil.");
+        }
+        
+        if (reservation.getStatus() != ReservationStatusEnum.CONFIRMED) {
+            throw new InvalidOperationException("Sadece onaylanmış rezervasyonlar için QR kodu oluşturulabilir.");
+        }
+
+        Session session = sessionRepository.findById(reservation.getSessionId())
+                .orElseThrow(() -> new EntityNotFoundException("Seans bulunamadı!"));
+
+        LocalDateTime sessionStart = LocalDateTime.of(session.getSessionDate(), session.getStartTime());
+        LocalDateTime sessionEnd = LocalDateTime.of(session.getSessionDate(), session.getEndTime());
+
+        return jwtTokenProvider.generateReservationQrToken(
+                reservation.getId(),
+                reservation.getMemberId(),
+                sessionStart,
+                sessionEnd
+        );
     }
 }
