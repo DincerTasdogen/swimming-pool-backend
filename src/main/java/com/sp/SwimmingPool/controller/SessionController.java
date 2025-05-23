@@ -1,6 +1,7 @@
 package com.sp.SwimmingPool.controller;
 
 import com.sp.SwimmingPool.dto.ApiResponse;
+import com.sp.SwimmingPool.dto.EducationStatusUpdateRequest;
 import com.sp.SwimmingPool.model.entity.Session;
 import com.sp.SwimmingPool.service.ScheduledSessionCreationService;
 import com.sp.SwimmingPool.service.SessionService;
@@ -60,14 +61,16 @@ public class SessionController {
     @PreAuthorize("hasAnyRole('ADMIN', 'COACH')")
     public ResponseEntity<?> updateSessionEducationStatus(
             @PathVariable int id,
-            @Valid @RequestBody boolean sessionEducationStatus) {
+            @Valid @RequestBody EducationStatusUpdateRequest request) { // Use the DTO
 
+        // Log the received value from the DTO
         log.info("Updating session {} education status to {}",
-                id, sessionEducationStatus );
+                id, request.getEducationSession() );
 
         try {
+            // Pass the boolean value from the DTO to your service
             Session updatedSession = sessionService.updateSessionEducationStatus(
-                    id, sessionEducationStatus);
+                    id, request.getEducationSession());
 
             if (updatedSession != null) {
                 return ResponseEntity.ok(updatedSession);
@@ -98,5 +101,16 @@ public class SessionController {
                     new ApiResponse(false, "Error during session availability check: " + e.getMessage())
             );
         }
+    }
+
+    @GetMapping("/pool/{poolId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COACH')")
+    public ResponseEntity<List<Session>> getSessionsForPoolInRange(
+            @PathVariable int poolId,
+            @RequestParam("start") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam("end") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end
+    ) {
+        List<Session> sessions = sessionService.getSessionsForPoolInRange(poolId, start, end);
+        return ResponseEntity.ok(sessions);
     }
 }

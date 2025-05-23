@@ -48,4 +48,8 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
     long countByPoolIdAndSessionDate(int id, LocalDate date);
 
     List<Session> findByPoolIdAndSessionDate(int poolId, LocalDate date);
+
+    List<Session> findByPoolIdAndSessionDateBetweenOrderBySessionDateAscStartTimeAsc(
+            int poolId, LocalDate start, LocalDate end
+    );
 }

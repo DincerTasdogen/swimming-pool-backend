@@ -36,6 +36,7 @@ public class MemberService {
     private final HealthAssessmentService healthAssessmentService;
     private final RiskAssessmentService riskAssessmentService;
     private final StorageService storageService;
+    private final CoachAssignmentService coachAssignmentService;
 
 
     private Member convertToEntity(MemberDTO dto) {
@@ -256,7 +257,11 @@ public class MemberService {
         if (requiresMedicalReport) {
             member.setStatus(StatusEnum.PENDING_HEALTH_REPORT);
         } else {
-            member.setStatus(StatusEnum.ACTIVE); // direkt onay aşamasına geçer
+            // Assign coach if not already assigned
+            if (member.getCoachId() == null) {
+                member.setCoachId(coachAssignmentService.findLeastLoadedCoachId());
+            }
+            member.setStatus(StatusEnum.ACTIVE);
         }
 
         memberRepository.save(member);
@@ -322,7 +327,7 @@ public class MemberService {
                      log.error("Could not delete invalid medical report file: {} - {}", assessment.getMedicalReportPath(), e.getMessage());
                  }
              }
-            assessment.setMedicalReportPath(null); // Clear the path
+            assessment.setMedicalReportPath(null);
 
             member.setStatus(StatusEnum.PENDING_HEALTH_REPORT);
             emailService.sendInvalidDocumentNotification(member.getEmail(), member.getName(), doctorNotes);
@@ -331,6 +336,9 @@ public class MemberService {
             assessment.setRequiresMedicalReport(false);
 
             if (isEligibleForPool) {
+                if (member.getCoachId() == null) {
+                    member.setCoachId(coachAssignmentService.findLeastLoadedCoachId());
+                }
                 member.setStatus(StatusEnum.ACTIVE);
                 emailService.sendRegistrationApproval(member.getEmail());
             } else {

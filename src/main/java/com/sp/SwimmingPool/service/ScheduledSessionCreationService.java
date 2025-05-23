@@ -11,19 +11,19 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.SchedulingConfigurer;
-import org.springframework.scheduling.config.ScheduledTaskRegistrar;
-import org.springframework.scheduling.support.CronTrigger;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class ScheduledSessionCreationService implements SchedulingConfigurer {
+public class ScheduledSessionCreationService {
 
     private static final int MINIMUM_DAYS_OF_SESSIONS = 3;
 
@@ -31,36 +31,8 @@ public class ScheduledSessionCreationService implements SchedulingConfigurer {
     private final SessionRepository sessionRepository;
     private final HolidayService holidayService;
     private final EducationTimeConfigRepository educationTimeConfigRepository;
-    private final Random random = new Random();
 
-    @Override
-    public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-        taskRegistrar.addTriggerTask(
-                this::generateScheduledSessions,
-                context -> {
-                    int hour = (random.nextInt(6) + 23) % 24;
-                    int minute = random.nextInt(60);
-                    String cronExpression = String.format(
-                            "0 %d %d * * ?",
-                            minute,
-                            hour
-                    );
-                    log.info(
-                            "Next full session generation scheduled with cron expression: {}",
-                            cronExpression
-                    );
-                    CronTrigger trigger = new CronTrigger(cronExpression);
-                    return trigger.nextExecution(context);
-                }
-        );
-
-        taskRegistrar.addCronTask(
-                this::ensureMinimumSessionAvailability,
-                "0 0 */12 * * ?"
-        );
-    }
-
-
+    @Scheduled(cron = "0 0 0 * * ?")
     @Transactional
     public void ensureMinimumSessionAvailability() {
         log.info(
@@ -116,7 +88,6 @@ public class ScheduledSessionCreationService implements SchedulingConfigurer {
         }
     }
 
-    @Transactional
     public void generateScheduledSessions() {
         log.info(
                 "Scheduled session generation task started at {}",
@@ -166,6 +137,16 @@ public class ScheduledSessionCreationService implements SchedulingConfigurer {
                     continue;
                 }
 
+                // Bulk fetch all existing sessions for this pool in the window
+                List<Session> existingSessions = sessionRepository
+                        .findByPoolIdAndSessionDateBetweenOrderBySessionDateAscStartTimeAsc(
+                                pool.getId(), today, windowEndDate
+                        );
+                // Use a Set of keys for fast lookup
+                Set<String> existingSessionKeys = existingSessions.stream()
+                        .map(s -> s.getSessionDate() + "_" + s.getStartTime())
+                        .collect(Collectors.toSet());
+
                 for (
                         LocalDate currentDate = today;
                         !currentDate.isAfter(windowEndDate);
@@ -184,21 +165,10 @@ public class ScheduledSessionCreationService implements SchedulingConfigurer {
                         LocalTime currentSessionEndTime =
                                 currentSessionStartTime.plusHours(1);
                         if (currentSessionEndTime.isAfter(closeAt)) {
-                            log.trace(
-                                    "Session at {} for pool {} would end after closing time {}. Stopping for this day.",
-                                    currentSessionStartTime,
-                                    pool.getName(),
-                                    closeAt
-                            );
                             break;
                         }
-                        if (
-                                !sessionRepository.existsByPoolIdAndSessionDateAndStartTime(
-                                        pool.getId(),
-                                        currentDate,
-                                        currentSessionStartTime
-                                )
-                        ) {
+                        String key = currentDate + "_" + currentSessionStartTime;
+                        if (!existingSessionKeys.contains(key)) {
                             Session newSession = new Session();
                             newSession.setPoolId(pool.getId());
                             newSession.setSessionDate(currentDate);
@@ -216,6 +186,9 @@ public class ScheduledSessionCreationService implements SchedulingConfigurer {
 
                             sessionRepository.save(newSession);
                             totalSessionsCreated++;
+                            // Optionally, add the new session to the set to avoid duplicate creation in this run
+                            existingSessionKeys.add(key);
+
                             log.trace(
                                     "Created session for pool ID {}, Date: {}, StartTime: {}, Education: {}",
                                     pool.getId(),
@@ -287,26 +260,5 @@ public class ScheduledSessionCreationService implements SchedulingConfigurer {
             }
         }
         return false;
-    }
-
-    @Transactional
-    public boolean updateSessionStatus(int sessionId, boolean isEducationSession) {
-        Session session = sessionRepository.findById(sessionId).orElse(null);
-        if (session == null) {
-            log.warn(
-                    "Session with ID {} not found for status update",
-                    sessionId
-            );
-            return false;
-        }
-        session.setEducationSession(isEducationSession);
-        session.setUpdatedAt(LocalDateTime.now());
-        sessionRepository.save(session);
-        log.info(
-                "Session {} status updated to education={}",
-                sessionId,
-                isEducationSession
-        );
-        return true;
     }
 }

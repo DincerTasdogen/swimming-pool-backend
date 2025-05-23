@@ -241,4 +241,9 @@ public class SessionService {
         session.setUpdatedAt(LocalDateTime.now());
         sessionRepository.save(session);
     }
+
+    @Transactional(readOnly = true)
+    public List<Session> getSessionsForPoolInRange(int poolId, LocalDate start, LocalDate end) {
+        return sessionRepository.findByPoolIdAndSessionDateBetweenOrderBySessionDateAscStartTimeAsc(poolId, start, end);
+    }
 }

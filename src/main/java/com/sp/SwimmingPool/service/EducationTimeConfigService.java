@@ -177,6 +177,14 @@ public class EducationTimeConfigService {
         }
     }
 
+    @Transactional
+    public boolean deleteEducationTimeConfig(Long id) {
+        EducationTimeConfig config = educationTimeConfigRepository.findById(id).orElse(null);
+        if (config == null) return false;
+        educationTimeConfigRepository.delete(config);
+        return true;
+    }
+
     public List<EducationTimeConfig> getAllActiveConfigs() {
         return educationTimeConfigRepository.findAllActive();
     }
