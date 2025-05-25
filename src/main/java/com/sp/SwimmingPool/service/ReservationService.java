@@ -206,6 +206,9 @@ public class ReservationService {
 
         // 8. Decrement remaining sessions in package
         memberPackage.setSessionsRemaining(memberPackage.getSessionsRemaining() - 1);
+        if (memberPackage.getSessionsRemaining() == 0) {
+            memberPackage.setActive(false);
+        }
         memberPackageRepository.save(memberPackage);
 
         // 9. Create and save the reservation
@@ -289,6 +292,10 @@ public class ReservationService {
                                         reservationId + ")."
                         )
                 );
+
+        if (memberPackage.getSessionsRemaining() == 0) {
+            memberPackage.setActive(true);
+        }
         memberPackage.setSessionsRemaining(memberPackage.getSessionsRemaining() + 1);
         memberPackageRepository.save(memberPackage);
 
