@@ -86,9 +86,6 @@ public class PackageTypeController {
     public ResponseEntity<List<PackageTypeDTO>> getEducationPackages() {
         try {
             List<PackageTypeDTO> educationPackages = packageService.listEducationPackages();
-            if (educationPackages.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
             return new ResponseEntity<>(educationPackages, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -99,9 +96,6 @@ public class PackageTypeController {
     public ResponseEntity<List<PackageTypeDTO>> getOtherPackages() {
         try {
             List<PackageTypeDTO> nonEducationPackages = packageService.listOtherPackages();
-            if (nonEducationPackages.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
             return new ResponseEntity<>(nonEducationPackages, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);

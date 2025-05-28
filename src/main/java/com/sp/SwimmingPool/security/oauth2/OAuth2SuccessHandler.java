@@ -1,6 +1,5 @@
 package com.sp.SwimmingPool.security.oauth2;
 
-import com.sp.SwimmingPool.repos.MemberRepository;
 import com.sp.SwimmingPool.security.JwtTokenProvider;
 import com.sp.SwimmingPool.security.UserPrincipal;
 import jakarta.servlet.ServletException;
@@ -24,7 +23,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    private final MemberRepository memberRepository;
     private final JwtTokenProvider tokenProvider;
 
     @Value("${app.redirect-uri}")
@@ -97,7 +95,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 }
 
                 // Build the redirect URL with hardcoded frontend URL to avoid path issues
-                StringBuilder urlBuilder = new StringBuilder("http://localhost:3000/register?");
+                StringBuilder urlBuilder = new StringBuilder(redirectUri + "/register?");
 
                 // Manually build query parameters - avoid potential URI encoding issues
                 if (email != null) {
@@ -125,7 +123,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         } catch (Exception ex) {
             log.error("OAuth2 authentication success handling failed", ex);
             getRedirectStrategy().sendRedirect(request, response,
-                    "http://localhost:3000/login?error=" +
+                    redirectUri + "/login?error=" +
                             URLEncoder.encode("Authentication failed: " + ex.getMessage(), StandardCharsets.UTF_8));
         }
     }

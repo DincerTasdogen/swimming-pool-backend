@@ -5,6 +5,8 @@ import com.sp.SwimmingPool.security.oauth2.OAuth2SuccessHandler;
 import com.sp.SwimmingPool.service.CustomOAuth2UserService;
 import com.sp.SwimmingPool.service.CustomUserDetailsService;
 import com.sp.SwimmingPool.security.JwtAuthenticationFilter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -24,12 +26,18 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
+@Slf4j
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    @Value("${app.authorized-redirect-uris}")
+    private String authorizedRedirectUris;
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomUserDetailsService customUserDetailsService;
@@ -89,7 +97,19 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:5173", "http://10.200.91.210:3000"));
+        List<String> allowedOrigins = new ArrayList<>();
+        allowedOrigins.add("http://localhost:3000");
+        if (authorizedRedirectUris != null) {
+            for (String uri : authorizedRedirectUris.split(",")) {
+                String trimmedUri = uri.trim();
+                allowedOrigins.add(trimmedUri);
+                if (!trimmedUri.endsWith("/")) {
+                    allowedOrigins.add(trimmedUri + "/");
+                }
+            }
+        }
+        log.info("Allowed origins: {}", allowedOrigins);
+        config.setAllowedOrigins(allowedOrigins);
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(Arrays.asList("Content-Type", "Authorization", "Cookie")); // Add Cookie
         config.setExposedHeaders(Arrays.asList("Set-Cookie"));

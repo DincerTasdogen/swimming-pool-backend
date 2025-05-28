@@ -19,6 +19,8 @@ import java.nio.file.Paths;
 @Service
 @RequiredArgsConstructor // Lombok annotation for constructor injection of final fields
 public class EmailService {
+    @Value("${app.redirect-uri}")
+    private String frontendUrl;
 
     private final JavaMailSender mailSender; // Marked final for constructor injection
 
@@ -164,7 +166,7 @@ public class EmailService {
 
     public void sendStaffInvitation(String to, String token) {
         String subject = "Yüzme Havuzu Sistemi - Personel Daveti";
-        String activationLink = "http://localhost:3000/activate-staff?token=" + token; // Ensure correct frontend URL
+        String activationLink = frontendUrl + "/activate-staff?token=" + token;
         String template = readEmailTemplate();
 
         // Specific help text for the invitation email including the activation link
