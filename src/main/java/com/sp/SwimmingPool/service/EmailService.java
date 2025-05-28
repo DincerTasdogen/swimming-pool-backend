@@ -32,7 +32,7 @@ public class EmailService {
      *
      * @return The template content as a String, or null if an error occurs.
      */
-    private String readEmailTemplate() {
+    protected String readEmailTemplate() {
         try {
             ClassPathResource resource = new ClassPathResource("templates/email-template.html");
             // Ensure it reads with UTF-8

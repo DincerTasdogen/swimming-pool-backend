@@ -23,6 +23,7 @@ public class PackageTypeDTO {
     private boolean isEducationPackage;
     private boolean requiresSwimmingAbility;
     private boolean multiplePools;
+    private boolean isActive;
 
     @Builder
     public PackageTypeDTO(
@@ -35,7 +36,8 @@ public class PackageTypeDTO {
             LocalTime endTime,
             boolean isEducationPackage,
             boolean requiresSwimmingAbility,
-            boolean multiplePools
+            boolean multiplePools,
+            boolean isActive
     ) {
         this.id = id;
         this.name = name;
@@ -47,6 +49,7 @@ public class PackageTypeDTO {
         this.isEducationPackage = isEducationPackage;
         this.requiresSwimmingAbility = requiresSwimmingAbility;
         this.multiplePools = multiplePools;
+        this.isActive = isActive;
     }
 
     public static PackageTypeDTO fromEntity(PackageType entity) {
@@ -61,6 +64,7 @@ public class PackageTypeDTO {
                 .isEducationPackage(entity.isEducationPackage())
                 .requiresSwimmingAbility(entity.isRequiresSwimmingAbility())
                 .multiplePools(entity.isMultiplePools())
+                .isActive(entity.isActive())
                 .build();
     }
 
@@ -80,5 +84,6 @@ public class PackageTypeDTO {
         entity.setEducationPackage(this.isEducationPackage);
         entity.setRequiresSwimmingAbility(this.requiresSwimmingAbility);
         entity.setMultiplePools(this.multiplePools);
+        entity.setActive(this.isActive);
     }
 }
