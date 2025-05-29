@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static java.lang.Thread.sleep;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -282,7 +283,7 @@ public class UserServiceTest {
     }
 
     @Test
-    void updateUser_userExists_updatesAndReturnsDTO() {
+    void updateUser_userExists_updatesAndReturnsDTO() throws InterruptedException {
         UserDTO updatedDetailsDTO = new UserDTO();
         updatedDetailsDTO.setName("UpdatedName");
         updatedDetailsDTO.setSurname("UpdatedSurname");
@@ -292,6 +293,7 @@ public class UserServiceTest {
         LocalDateTime originalUpdatedAt = user.getUpdatedAt();
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        sleep(1000);
 
         UserDTO resultDTO = userService.updateUser(user.getId(), updatedDetailsDTO);
 

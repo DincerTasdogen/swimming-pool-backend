@@ -22,7 +22,7 @@ public class JwtTokenProvider {
     @Value("${jwt.expiration}")
     private int jwtExpirationMs;
 
-    private SecretKey getSigningKey() {
+    protected SecretKey getSigningKey() {
         byte[] keyBytes = Base64.getDecoder().decode(jwtSecret);
         return Keys.hmacShaKeyFor(keyBytes);
     }
